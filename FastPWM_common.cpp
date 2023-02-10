@@ -6,8 +6,10 @@ FastPWM::FastPWM(PinName pin, int prescaler) : PwmOut(pin) {
     this->prescaler(prescaler);
     
     //Set duty cycle on 0%, period on 20ms
-    period(0.02);
-    write(0.0);
+    //period(0.02);
+    //write(0.5f);
+    period_mus(50);
+    write(0.5f);
 }
 
 FastPWM::~FastPWM( void ) {
@@ -33,19 +35,21 @@ void FastPWM::period_ms(int ms) {
     period_ticks(ms * iticks_ms);
 }
 
-void FastPWM::period_us(int us) {
+void FastPWM::period_mus(int us) {
     if (dynamicPrescaler)
         calcPrescaler(us * (SystemCoreClock / 1000000));
     
     period_ticks(us * iticks_us);
 }
 
-void FastPWM::period_us(double us) {
+/*
+void FastPWM::period_mus(double us) {
     if (dynamicPrescaler)
         calcPrescaler((uint64_t)(us * (double)(SystemCoreClock / 1000000)));
         
     period_ticks(us * dticks_us + 0.5);
 }
+*/
 
 void FastPWM::pulsewidth(double seconds) {
     pulsewidth_ticks(seconds * dticks + 0.5);

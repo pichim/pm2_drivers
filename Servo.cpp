@@ -1,76 +1,74 @@
 #include "Servo.h"
 
-const float Servo::MIN_INPUT = 0.01f;
-const float Servo::MAX_INPUT = 0.99f;
+const float Servo::MIN_INPUT = 0.02f;
+const float Servo::MAX_INPUT = 0.98f;
+const uint16_t Servo::DEFAULT_PERIOD_MUS = 20000;
 
 Servo::Servo(PinName Pin) : ServoPin(Pin)
 {
     servoEnabled = false;
-    Position = 0;
-    Period = 0;
+    Angle = 0;
+    Period = DEFAULT_PERIOD_MUS;
 }
 
 /**
  * Sets the pwm period.
- * @_Period period in mus.
+ * @param _Period period in mus.
  */
-void Servo::SetPeriod(float _Period)
+void Servo::setPeriod_mus(uint16_t _Period)
 {
     Period = _Period;
 }
 
 /**
  * Sets the desired angle.
- * @_Input a value between 0...1.
+ * @param _Angle  a value between 0...1.
  */
-void Servo::SetPosition(float _Input)
+void Servo::setNorlalisedAngle(float _Angle)
 {
     if (servoEnabled) {
-        if (_Input < MIN_INPUT) _Input = MIN_INPUT;
-        if (_Input > MAX_INPUT) _Input = MAX_INPUT;
-        Position = static_cast<int>(_Input * static_cast<float>(Period));
+        if (_Angle < MIN_INPUT) _Angle = MIN_INPUT;
+        if (_Angle > MAX_INPUT) _Angle = MAX_INPUT;
+        Angle = static_cast<uint16_t>(_Angle * static_cast<float>(Period));
     }
 }
 
-void Servo::StartPulse()
+void Servo::startPulse()
 {
     ServoPin = 1;
-    PulseStop.attach(callback(this, &Servo::EndPulse), std::chrono::microseconds{static_cast<long int>(Position)});
+    PulseStop.attach(callback(this, &Servo::endPulse), std::chrono::microseconds{static_cast<long int>(Angle)});
 }
 
-void Servo::EndPulse()
+void Servo::endPulse()
 {
     ServoPin = 0;
 }
 
 /**
  * Enables the servo with start angle and period.
- * @_StartInput a value between 0...1.
- * @_Period period in mus.
- */
-void Servo::Enable(float _StartInput, int _Period)
+ * @param _startAngle a value between 0...1.
+  */
+void Servo::enable(float _startAngle)
 {
     servoEnabled = true;
-    if (_StartInput < MIN_INPUT) _StartInput = MIN_INPUT;
-    if (_StartInput > MAX_INPUT) _StartInput = MAX_INPUT;
-    Period = _Period;
-    Position = static_cast<int>(_StartInput * static_cast<float>(Period));
-    Pulse.attach(callback(this, &Servo::StartPulse), std::chrono::microseconds{static_cast<long int>(Period)});
+    if (_startAngle < MIN_INPUT) _startAngle = MIN_INPUT;
+    if (_startAngle > MAX_INPUT) _startAngle = MAX_INPUT;
+    Angle = static_cast<uint16_t>(_startAngle * static_cast<float>(Period));
+    Pulse.attach(callback(this, &Servo::startPulse), std::chrono::microseconds{static_cast<long int>(Period)});
 }
 
 /**
  * Enables the servo with last set angle and period.
  */
-void Servo::Enable()
+void Servo::enable()
 {
-    servoEnabled = true;
-    Pulse.attach(callback(this, &Servo::StartPulse), std::chrono::microseconds{static_cast<long int>(Period)});
+    enable(0.0f);
 }
 
 /**
  * Disables the servo.
  */
-void Servo::Disable()
+void Servo::disable()
 {
     servoEnabled = false;
     Pulse.detach();

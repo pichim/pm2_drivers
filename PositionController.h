@@ -30,10 +30,11 @@ public:
 
 private:
 
-    static const float TS;
-    static const float LOWPASS_FILTER_FREQUENCY;
-    static const float MIN_DUTY_CYCLE;
-    static const float MAX_DUTY_CYCLE;
+    static const float    TS;
+    static const float    LOWPASS_FILTER_FREQUENCY;
+    static const float    MIN_DUTY_CYCLE;
+    static const float    MAX_DUTY_CYCLE;
+    static const uint16_t DEFAULT_PERIOD_MUS;
 
     float counts_per_turn;
     float kn;

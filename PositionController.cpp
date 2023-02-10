@@ -1,9 +1,10 @@
 #include "PositionController.h"
 
-const float PositionController::TS = 0.001f;                       // period of 1 ms
-const float PositionController::LOWPASS_FILTER_FREQUENCY = 100.0f; // given in [rad/s]
-const float PositionController::MIN_DUTY_CYCLE = 0.01f;            // minimum duty-cycle
-const float PositionController::MAX_DUTY_CYCLE = 0.99f;            // maximum duty-cycle
+const float    PositionController::TS = 0.001f;                       // period of 1 ms
+const float    PositionController::LOWPASS_FILTER_FREQUENCY = 100.0f; // given in [rad/s]
+const float    PositionController::MIN_DUTY_CYCLE = 0.01f;            // minimum duty-cycle
+const float    PositionController::MAX_DUTY_CYCLE = 0.99f;            // maximum duty-cycle
+const uint16_t PositionController::DEFAULT_PERIOD_MUS = 50;
 
 PositionController::PositionController(float counts_per_turn, float kn, float max_voltage, FastPWM& pwm, EncoderCounter& encoderCounter) : pwm(pwm), encoderCounter(encoderCounter), thread(osPriorityHigh, 4096)
 {
@@ -15,8 +16,8 @@ PositionController::PositionController(float counts_per_turn, float kn, float ma
     setPositionCntrlGain(22.0f);
 
     // initialise pwm
-    pwm.period(0.00005); // pwm period of 50 us
-    pwm.write(0.5);      // duty-cycle of 50%
+    pwm.period_mus(DEFAULT_PERIOD_MUS); // pwm period of 50 us
+    pwm.write(0.5f);    // duty-cycle of 50%
 
     // initialise
     previousValueCounter = encoderCounter.read();

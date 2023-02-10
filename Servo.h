@@ -24,6 +24,7 @@
 #define MBED_SERVO_H
 
 #include "mbed.h"
+#include <cstdint>
 
 class Servo
 {
@@ -31,23 +32,24 @@ class Servo
 public:
 
     Servo(PinName Pin);
-    void SetPeriod(float _Period);
-    void SetPosition(float _Input);
-    void Enable(float _StartInput, int _Period);
-    void Enable();
-    void Disable();
+    void setPeriod_mus(uint16_t _Period);
+    void setNorlalisedAngle(float _Angle);
+    void enable(float _startAngle);
+    void enable();
+    void disable();
     bool isEnabled();
 
 private:
 
-    static const float MIN_INPUT;
-    static const float MAX_INPUT;
+    static const float    MIN_INPUT;
+    static const float    MAX_INPUT;
+    static const uint16_t DEFAULT_PERIOD_MUS;
 
-    void StartPulse();
-    void EndPulse();
+    void startPulse();
+    void endPulse();
 
     bool servoEnabled;
-    int Position, Period;
+    uint16_t Angle, Period;
     DigitalOut ServoPin;
     Ticker Pulse;
     Timeout PulseStop;

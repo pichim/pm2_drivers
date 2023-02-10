@@ -56,12 +56,12 @@ public:
     /**
     * Set the PWM period, specified in micro-seconds (int), keeping the pulsewidth the same.
     */
-    void period_us(int us);
+    void period_mus(int us);
     
     /**
     * Set the PWM period, specified in micro-seconds (double), keeping the pulsewidth the same.
     */
-    void period_us(double us);
+    //void period_mus(double us);
     
     /**
     * Set the PWM period, specified in clock ticks, keeping _pulse width_ the same.
