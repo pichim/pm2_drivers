@@ -7,6 +7,7 @@
 #include "RangeFinder.h"
 // #include "LSM9DS1_i2c.h" // this thing is a mess
 #include "SensorBar.h"
+#include "DebounceIn.h"
 
 /** PES-Board Versions
  *
