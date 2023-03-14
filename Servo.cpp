@@ -24,7 +24,7 @@ void Servo::setPeriod_mus(uint16_t _Period)
  * Sets the desired angle.
  * @param _Angle  a value between 0...1.
  */
-void Servo::setNorlalisedAngle(float _Angle)
+void Servo::setNormalisedAngle(float _Angle)
 {
     if (servoEnabled) {
         if (_Angle < MIN_INPUT) _Angle = MIN_INPUT;

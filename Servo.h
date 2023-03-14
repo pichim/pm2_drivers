@@ -33,7 +33,7 @@ public:
 
     Servo(PinName Pin);
     void setPeriod_mus(uint16_t _Period);
-    void setNorlalisedAngle(float _Angle);
+    void setNormalisedAngle(float _Angle);
     void enable(float _startAngle);
     void enable();
     void disable();
