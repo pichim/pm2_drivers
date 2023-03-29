@@ -19,6 +19,7 @@ public:
     void     setDesiredSpeedRPS(float desiredSpeed);
     float    getSpeedRPM();
     float    getSpeedRPS();
+    float    getRotation();
     void     setFeedForwardGain(float kn);
     void     setSpeedCntrlGain(float kp);
     void     setMaxVelocityRPS(float maxVelocityRPS);
@@ -47,7 +48,8 @@ private:
     LowpassFilter      speedFilter;
     float              desiredSpeed;
     float              actualSpeed;
-    // float              actualAngle;
+    float              initialRotation;
+    float              actualRotation;
     
     Motion             motion;
 

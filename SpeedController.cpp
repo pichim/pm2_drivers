@@ -23,7 +23,8 @@ SpeedController::SpeedController(float counts_per_turn, float kn, float max_volt
     speedFilter.setFrequency(LOWPASS_FILTER_FREQUENCY);
     desiredSpeed = 0.0f;
     actualSpeed = 0.0f;
-    // actualAngle = 0.0f;
+    this->initialRotation = (float)encoderCounter.read()/counts_per_turn;
+    actualRotation  = initialRotation;
     
     motion.setProfileVelocity(max_voltage * kn);
     float maxAcceleration = 22.0f * max_voltage * kn * 0.4f; // pmic, 13.05.2022, only 40%, based on simple measurement, max_voltage * kn is gearratio
@@ -72,6 +73,15 @@ void SpeedController::setDesiredSpeedRPS(float desiredSpeed)
 float SpeedController::getSpeedRPS()
 {
     return actualSpeed/60.0f;
+}
+
+/**
+ * Reads the number of rotations (1 corresponds to 360 deg).
+ * @return actual rotations.
+ */
+float SpeedController::getRotation()
+{
+    return actualRotation - initialRotation;
 }
 
 /**
@@ -141,7 +151,7 @@ void SpeedController::run()
         short countsInPastPeriod = valueCounter - previousValueCounter;
         previousValueCounter = valueCounter;
         actualSpeed = speedFilter.filter((float)countsInPastPeriod/counts_per_turn/TS*60.0f);
-        // actualAngle = actualAngle + actualSpeed/60.0f*TS;
+        actualRotation = actualRotation + actualSpeed/60.0f*TS;
 
         motion.incrementToVelocity(desiredSpeed, TS);       
         float desiredSpeedMotion = motion.getVelocity();
