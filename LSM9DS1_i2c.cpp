@@ -1052,8 +1052,7 @@ uint8_t LSM9DS1::xgReadByte(uint8_t subAddress)
         return I2CreadByte(_xgAddress, subAddress);
     else if (settings.device.commInterface == IMU_MODE_SPI)
         return SPIreadByte(_xgAddress, subAddress);
-		else 
-			return 0;
+	return 0;
 }
 
 void LSM9DS1::xgReadBytes(uint8_t subAddress, uint8_t * dest, uint8_t count)
@@ -1075,8 +1074,7 @@ uint8_t LSM9DS1::mReadByte(uint8_t subAddress)
         return I2CreadByte(_mAddress, subAddress);
     else if (settings.device.commInterface == IMU_MODE_SPI)
         return SPIreadByte(_mAddress, subAddress);
-		else 
-			return 0;
+	return 0;
 }
 
 void LSM9DS1::mReadBytes(uint8_t subAddress, uint8_t * dest, uint8_t count)
@@ -1194,11 +1192,11 @@ uint8_t LSM9DS1::I2CreadByte(uint8_t address, uint8_t subAddress)
     return data;                             // Return data read from slave register
     */
     char data;
-    char temp[1] = {subAddress};
+    char temp[2] = {subAddress};
     
     i2c.write(address, temp, 1);
     //i2c.write(address & 0xFE);
-    temp[0] = 0x00;
+    temp[1] = 0x00;
     i2c.write(address, temp, 1);
     //i2c.write( address | 0x01);
     int a = i2c.read(address, &data, 1);
