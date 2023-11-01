@@ -47,7 +47,7 @@ SensorBar::SensorBar(I2C& i2c, float distAxisToSensor) : i2c(i2c), thread(osPrio
 
     angle = avg_angle = 0;
     nrOfLedsActive = 0;
-    avg_filter.setup(10);
+    avg_filter.Init(10);
     is_first_avg = true;
 
     clearBarStrobe();  // to illuminate all the time
@@ -382,15 +382,15 @@ void SensorBar::update()
 
         if(nrOfLedsActive == 0) {
             if(!is_first_avg) {
-                avg_filter.reset();
+                avg_filter.Reset();
                 is_first_avg = true;
             }
         } else {
             if(is_first_avg) {
                 is_first_avg = false;
-                avg_filter.reset(angle);
+                avg_filter.Reset(angle);
             }
-            avg_angle = avg_filter.update(angle);
+            avg_angle = avg_filter.Apply(angle);
         }
     }
 }

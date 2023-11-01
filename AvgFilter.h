@@ -7,16 +7,16 @@ class AvgFilter
 {
 public:
     AvgFilter(){};
-    AvgFilter(uint8_t _N);
+    AvgFilter(uint8_t N);
     virtual ~AvgFilter();
 
-    void setup(uint8_t _N);
-    void reset(float _avg);
-    void reset();
-    float update(float _inp);
+    void Init(uint8_t N);
+    void Reset(float val);
+    void Reset();
+    float Apply(float inp);
 
 private:
-    float m_avg;
+    float m_val;
     uint8_t m_N;
     uint8_t m_idx;
     float *m_ring_buffer;
