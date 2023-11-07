@@ -1,84 +1,75 @@
 #include "Servo.h"
 
-const float Servo::MIN_INPUT = 0.02f;
-const float Servo::MAX_INPUT = 0.98f;
-const uint16_t Servo::DEFAULT_PERIOD_MUS = 20000;
+const float Servo::INPUT_MIN = 0.01f;
+const float Servo::INPUT_MAX = 0.99f;
+const uint16_t Servo::PERIOD_MUS = 20000;
 
-Servo::Servo(PinName Pin) : ServoPin(Pin)
+Servo::Servo(PinName pinName) : m_DigitalOut(pinName)
 {
-    servoEnabled = false;
-    Angle = 0;
-    Period = DEFAULT_PERIOD_MUS;
+    m_servo_enabled = false;
+
+    // set default pulse width and period
+    m_pulse_mus = 0;
+    m_period_mus = PERIOD_MUS;
 }
 
-/**
- * Sets the pwm period.
- * @param _Period period in mus.
- */
-void Servo::setPeriod_mus(uint16_t _Period)
+Servo::~Servo()
 {
-    Period = _Period;
+    m_Ticker.detach();
 }
 
-/**
- * Sets the desired angle.
- * @param _Angle  a value between 0...1.
- */
-void Servo::setNormalisedAngle(float _Angle)
+void Servo::setNormalisedPulseWidth(float pulse)
 {
-    if (servoEnabled) {
-        if (_Angle < MIN_INPUT) _Angle = MIN_INPUT;
-        if (_Angle > MAX_INPUT) _Angle = MAX_INPUT;
-        Angle = static_cast<uint16_t>(_Angle * static_cast<float>(Period));
+    if (m_servo_enabled) {
+        // check if pulse is within range
+        pulse = constrainPulse(pulse);
+        
+        // update pulse width as fraction of period in mus
+        m_pulse_mus = (uint16_t)(pulse * (float)(m_period_mus));
     }
 }
 
-void Servo::startPulse()
+void Servo::enable(float pulse)
 {
-    ServoPin = 1;
-    PulseStop.attach(callback(this, &Servo::endPulse), std::chrono::microseconds{static_cast<long int>(Angle)});
+    m_servo_enabled = true;
+    setNormalisedPulseWidth(pulse);
+    // attach startPulse() to ticker
+    m_Ticker.attach(callback(this, &Servo::startPulse), std::chrono::microseconds{m_period_mus});
 }
 
-void Servo::endPulse()
-{
-    ServoPin = 0;
-}
-
-/**
- * Enables the servo with start angle and period.
- * @param _startAngle a value between 0...1.
-  */
-void Servo::enable(float _startAngle)
-{
-    servoEnabled = true;
-    if (_startAngle < MIN_INPUT) _startAngle = MIN_INPUT;
-    if (_startAngle > MAX_INPUT) _startAngle = MAX_INPUT;
-    Angle = static_cast<uint16_t>(_startAngle * static_cast<float>(Period));
-    Pulse.attach(callback(this, &Servo::startPulse), std::chrono::microseconds{static_cast<long int>(Period)});
-}
-
-/**
- * Enables the servo with last set angle and period.
- */
 void Servo::enable()
 {
     enable(0.0f);
 }
 
-/**
- * Disables the servo.
- */
 void Servo::disable()
 {
-    servoEnabled = false;
-    Pulse.detach();
+    m_servo_enabled = false;
+    m_Ticker.detach();
 }
 
-/**
- * Returns true if Servo is enabled.
- * @return isEnable.
- */
 bool Servo::isEnabled()
 {
-    return servoEnabled;
+    return m_servo_enabled;
+}
+
+float Servo::constrainPulse(float pulse)
+{
+    // check if pulse is within range
+    pulse = (pulse < INPUT_MIN) ? INPUT_MIN : pulse;
+    pulse = (pulse > INPUT_MAX) ? INPUT_MAX : pulse;
+    return pulse;
+}
+
+void Servo::startPulse()
+{
+    // enable digital output and attach endPulse() to timeout
+    m_DigitalOut = 1;
+    m_Timeout.attach(callback(this, &Servo::endPulse), std::chrono::microseconds{m_pulse_mus});
+}
+
+void Servo::endPulse()
+{
+    // diable digital output
+    m_DigitalOut = 0;
 }

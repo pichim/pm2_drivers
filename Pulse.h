@@ -22,7 +22,7 @@
 #ifndef MBED_PULSE_H
 #define MBED_PULSE_H
 
-#include "mbed.h"
+#include <mbed.h>
 
 /** Pulse Input/Output Class(es)
  */

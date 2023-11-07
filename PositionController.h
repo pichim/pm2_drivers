@@ -5,7 +5,7 @@
 #include "EncoderCounter.h"
 #include "LowpassFilter.h"
 #include "ThreadFlag.h"
-#include "FastPWM.h"
+#include "FastPWM/FastPWM.h"
 #include "Motion.h"
 
 class PositionController

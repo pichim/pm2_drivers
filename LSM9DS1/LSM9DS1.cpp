@@ -23,7 +23,7 @@ Distributed as-is; no warranty is given.
 Modified: Nicolas Borla, 20.01.2019
 ******************************************************************************/
 
-#include "LSM9DS1_i2c.h"
+#include "LSM9DS1.h"
 #include "LSM9DS1_Registers.h"
 #include "LSM9DS1_Types.h"
 //#include <Wire.h> // Wire library is used for I2C
@@ -77,7 +77,7 @@ void LSM9DS1::init(interface_mode interface, uint8_t xgAddr, uint8_t mAddr)
     settings.gyro.enableY = true;
     settings.gyro.enableZ = true;
     // gyro scale can be 245, 500, or 2000 dps (degree per second)
-    settings.gyro.scale = 500;
+    settings.gyro.scale = 2000;
     // gyro sample rate: value between 1-6 in Hz
     // 1 = 14.9    4 = 238
     // 2 = 59.5    5 = 476
@@ -90,7 +90,7 @@ void LSM9DS1::init(interface_mode interface, uint8_t xgAddr, uint8_t mAddr)
     //          1 ->  28 Hz
     //          2 ->  57 Hz
     //          3 -> 100 Hz
-    settings.gyro.bandwidth = 1; 
+    settings.gyro.bandwidth = 0; 
     settings.gyro.lowPowerEnable = false;
     settings.gyro.HPFEnable = false;
     // Gyro HPF cutoff frequency: value between 0-9
@@ -119,7 +119,7 @@ void LSM9DS1::init(interface_mode interface, uint8_t xgAddr, uint8_t mAddr)
     // 0 = 408 Hz   2 = 105 Hz
     // 1 = 211 Hz   3 = 50 Hz
     settings.accel.bandwidth = 3;
-    settings.accel.highResEnable = false;
+    settings.accel.highResEnable = true;
     // accelHighResBandwidth can be any value between 0-3
     // LP cutoff is set to a factor of sample rate
     // 0 = ODR/50    2 = ODR/9
@@ -204,10 +204,10 @@ uint16_t LSM9DS1::begin()
     return whoAmICombined;
 }
 
-float LSM9DS1::readGyroX(){return gyroX;}
+float LSM9DS1::readGyroX(){return -gyroX;}
 float LSM9DS1::readGyroY(){return gyroY;}
 float LSM9DS1::readGyroZ(){return gyroZ;}
-float LSM9DS1::readAccX(){return accX;}
+float LSM9DS1::readAccX(){return -accX;}
 float LSM9DS1::readAccY(){return accY;}
 float LSM9DS1::readAccZ(){return accZ;}
 float LSM9DS1::readMagX(){return magX;}

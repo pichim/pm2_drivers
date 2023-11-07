@@ -1,19 +1,24 @@
-#ifndef AVGFILTER_H_
-#define AVGFILTER_H_
+#ifndef AVG_FILTER_H_
+#define AVG_FILTER_H_
 
-#include <mbed.h>
+#include "mbed.h"
 
+/**
+ * Average filter class.
+ */
 class AvgFilter
 {
+
 public:
+
     AvgFilter(){};
     AvgFilter(uint8_t N);
     virtual ~AvgFilter();
 
-    void Init(uint8_t N);
-    void Reset(float val);
-    void Reset();
-    float Apply(float inp);
+    void init(uint8_t N);
+    void reset(float val);
+    void reset();
+    float apply(float inp);
 
 private:
     float m_val;
@@ -22,4 +27,4 @@ private:
     float *m_ring_buffer;
 };
 
-#endif /* AVGFILTER_H_ */
+#endif /* AVG_FILTER_H_ */

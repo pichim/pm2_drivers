@@ -1,58 +1,39 @@
-/* mbed Servo Library without using PWM pins
- * Copyright (c) 2010 Jasper Denkers
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-#ifndef MBED_SERVO_H
-#define MBED_SERVO_H
+#ifndef SERVO_H_
+#define SERVO_H_
 
 #include "mbed.h"
-#include <cstdint>
 
+/**
+ * Servo controller for smooth movements.
+ */
 class Servo
 {
 
 public:
+    Servo(PinName pinName);
+    virtual ~Servo();
 
-    Servo(PinName Pin);
-    void setPeriod_mus(uint16_t _Period);
-    void setNormalisedAngle(float _Angle);
-    void enable(float _startAngle);
+    void setNormalisedPulseWidth(float pulse);
+    void enable(float pulse);
     void enable();
     void disable();
     bool isEnabled();
+    float constrainPulse(float pulse);
 
 private:
+    static const float INPUT_MIN;
+    static const float INPUT_MAX;
+    static const uint16_t PERIOD_MUS;
 
-    static const float    MIN_INPUT;
-    static const float    MAX_INPUT;
-    static const uint16_t DEFAULT_PERIOD_MUS;
+    bool m_servo_enabled;
+    uint16_t m_pulse_mus, m_period_mus;
+
+    DigitalOut m_DigitalOut;
+    Ticker m_Ticker;
+    Timeout m_Timeout;
 
     void startPulse();
     void endPulse();
-
-    bool servoEnabled;
-    uint16_t Angle, Period;
-    DigitalOut ServoPin;
-    Ticker Pulse;
-    Timeout PulseStop;
 };
 
-#endif
+#endif /* SERVO_H_ */
