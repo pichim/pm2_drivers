@@ -19,19 +19,23 @@ Servo::~Servo()
 
 void Servo::calibratePulseMinMax(float pulse_min, float pulse_max)
 {
+    // set minimal and maximal pulse width
     m_pulse_min = pulse_min;
     m_pulse_max = pulse_max;
 }
 
 void Servo::setMotionProfileAcceleration(float acceleration)
 {
+    // convert acceleration from calibrated normalised pulse width to normalised pulse width
+    acceleration *= (m_pulse_max - m_pulse_min);
     m_Motion.setProfileAcceleration(acceleration);
     m_Motion.setProfileDeceleration(acceleration);
 }
 
 void Servo::setNormalisedPulseWidth(float pulse)
 {
-    m_pulse = constrainPulse((m_pulse_max - m_pulse_min) * pulse + m_pulse_min);
+    // after calibrating the mapping from setNormalisedPulseWidth() is (0, 1) -> (pulse_min, pulse_max)
+    m_pulse = calculateNormalisedPulseWidth(pulse);
 }
 
 void Servo::enable(float pulse)
@@ -39,7 +43,7 @@ void Servo::enable(float pulse)
     m_enabled = true;
 
     // set pulse width when enabled
-    m_pulse = constrainPulse(pulse);
+    m_pulse = calculateNormalisedPulseWidth(pulse);
     m_Motion.setPosition(m_pulse);
 
     // attach sendThreadFlag() to ticker so that sendThreadFlag() is called periodically, which signals the thread to execute
@@ -58,6 +62,11 @@ void Servo::disable()
 bool Servo::isEnabled() const
 {
     return m_enabled;
+}
+
+float Servo::calculateNormalisedPulseWidth(float pulse)
+{
+    return constrainPulse((m_pulse_max - m_pulse_min) * pulse + m_pulse_min);
 }
 
 void Servo::threadTask()

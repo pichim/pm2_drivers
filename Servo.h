@@ -3,7 +3,6 @@
 
 #include "mbed.h"
 
-// #include "PESBoardPinName.h"
 #include "Motion.h"
 #include "ThreadFlag.h"
 
@@ -41,6 +40,7 @@ private:
     float m_pulse_min{0.0f};
     float m_pulse_max{1.0f};
 
+    float calculateNormalisedPulseWidth(float pulse);
     void threadTask();
     void enableDigitalOutput();
     void disableDigitalOutput();
