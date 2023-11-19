@@ -1,38 +1,38 @@
 #ifndef SERVO_CONTROLLER_H_
 #define SERVO_CONTROLLER_H_
 
-#include <mbed.h>
+#include "mbed.h"
 
 #include "Servo.h"
 #include "Motion.h"
 #include "ThreadFlag.h"
 
 /**
- * Servo class.
+ * ServoController class with motion control.
  */
 class ServoController
 {
-
 public:
-    ServoController(PinName pinName);
+    explicit ServoController(PinName pinName);
     virtual ~ServoController();
 
-    void setNormalisedPulseWidth(float pulse);
-    void enable(float pulse);
-    void enable();
+    void setNormalisedPulseWidth(float pulse = 0.0f);
+    void enable(float pulse = 0.0f);
     void disable();
-    bool isEnabled();
+    bool isEnabled() const;
 
 private:
-    static const float TS;
-
-    float m_pulse;
+    static constexpr float PROFILE_VELOCITY = 1.0e6f; // 1.0e6f instead of inf
+    static constexpr float PROFILE_ACCELERATION = 0.2f;
+    static constexpr float TS = 1.0e-6f * static_cast<float>(Servo::PERIOD_MUS);
 
     Servo m_Servo;
     Motion m_Motion;
     ThreadFlag m_ThreadFlag;
     Thread m_Thread;
     Ticker m_Ticker;
+
+    float m_pulse;
 
     void run();
     void sendThreadFlag();

@@ -1,16 +1,11 @@
 #include "Servo.h"
 
-const float Servo::INPUT_MIN = 0.01f;
-const float Servo::INPUT_MAX = 0.99f;
-const uint16_t Servo::PERIOD_MUS = 20000;
-
-Servo::Servo(PinName pinName) : m_DigitalOut(pinName)
+Servo::Servo(PinName pinName) : m_DigitalOut(pinName),
+                                m_Ticker(),
+                                m_Timeout(),
+                                m_servo_enabled(false),
+                                m_pulse_mus(0)
 {
-    m_servo_enabled = false;
-
-    // set default pulse width and period
-    m_pulse_mus = 0;
-    m_period_mus = PERIOD_MUS;
 }
 
 Servo::~Servo()
@@ -20,12 +15,8 @@ Servo::~Servo()
 
 void Servo::setNormalisedPulseWidth(float pulse)
 {
-    if (m_servo_enabled) {
-        // check if pulse is within range
-        pulse = constrainPulse(pulse);
-        
-        // update pulse width as fraction of period in mus
-        m_pulse_mus = (uint16_t)(pulse * (float)(m_period_mus));
+    if (isEnabled()) {
+        m_pulse_mus = static_cast<uint16_t>(constrainPulse(pulse) * static_cast<float>(PERIOD_MUS));
     }
 }
 
@@ -33,13 +24,7 @@ void Servo::enable(float pulse)
 {
     m_servo_enabled = true;
     setNormalisedPulseWidth(pulse);
-    // attach startPulse() to ticker
-    m_Ticker.attach(callback(this, &Servo::startPulse), std::chrono::microseconds{m_period_mus});
-}
-
-void Servo::enable()
-{
-    enable(0.0f);
+    m_Ticker.attach(callback(this, &Servo::startPulse), std::chrono::microseconds{PERIOD_MUS});
 }
 
 void Servo::disable()
@@ -48,16 +33,18 @@ void Servo::disable()
     m_Ticker.detach();
 }
 
-bool Servo::isEnabled()
+bool Servo::isEnabled() const
 {
     return m_servo_enabled;
 }
 
-float Servo::constrainPulse(float pulse)
+float Servo::constrainPulse(float pulse) const
 {
     // check if pulse is within range
-    pulse = (pulse < INPUT_MIN) ? INPUT_MIN : pulse;
-    pulse = (pulse > INPUT_MAX) ? INPUT_MAX : pulse;
+    if (pulse < INPUT_MIN) 
+        pulse = INPUT_MIN;
+    else if (pulse > INPUT_MAX)
+        pulse = INPUT_MAX;
     return pulse;
 }
 

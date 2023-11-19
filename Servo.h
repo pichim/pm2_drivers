@@ -4,33 +4,32 @@
 #include "mbed.h"
 
 /**
- * Servo controller for smooth movements.
+ * Servo class.
  */
 class Servo
 {
-
 public:
-    Servo(PinName pinName);
+    explicit Servo(PinName pinName);
     virtual ~Servo();
 
-    void setNormalisedPulseWidth(float pulse);
-    void enable(float pulse);
-    void enable();
+    static constexpr uint16_t PERIOD_MUS = 20000;
+
+    void setNormalisedPulseWidth(float pulse = 0.0f);
+    void enable(float pulse = 0.0f);
     void disable();
-    bool isEnabled();
-    float constrainPulse(float pulse);
+    bool isEnabled() const;
+    float constrainPulse(float pulse) const;
 
 private:
-    static const float INPUT_MIN;
-    static const float INPUT_MAX;
-    static const uint16_t PERIOD_MUS;
-
-    bool m_servo_enabled;
-    uint16_t m_pulse_mus, m_period_mus;
+    static constexpr float INPUT_MIN = 0.01f;
+    static constexpr float INPUT_MAX = 0.99f;
 
     DigitalOut m_DigitalOut;
     Ticker m_Ticker;
     Timeout m_Timeout;
+
+    bool m_servo_enabled;
+    uint16_t m_pulse_mus;
 
     void startPulse();
     void endPulse();
