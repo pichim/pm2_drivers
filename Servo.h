@@ -6,6 +6,8 @@
 #include "Motion.h"
 #include "ThreadFlag.h"
 
+//#define PRINT_FOR_DEBUG true
+
 /**
  * @brief Class for smooth control of a servo motor.
  *
@@ -70,7 +72,7 @@ public:
     bool isEnabled() const;
 
 private:
-    static constexpr uint16_t PERIOD_MUS = 20000;
+    static constexpr long long PERIOD_MUS = 20000;
     static constexpr float INPUT_MIN = 0.01f;
     static constexpr float INPUT_MAX = 0.99f;
 

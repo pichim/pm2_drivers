@@ -28,6 +28,7 @@ void Servo::setMotionProfileAcceleration(float acceleration)
 {
     // convert acceleration from calibrated normalised pulse width to normalised pulse width
     acceleration *= (m_pulse_max - m_pulse_min);
+    m_Motion.setProfileVelocity(1.0e6f); // 1.0e6f instead of infinity
     m_Motion.setProfileAcceleration(acceleration);
     m_Motion.setProfileDeceleration(acceleration);
 }
@@ -71,14 +72,25 @@ float Servo::calculateNormalisedPulseWidth(float pulse)
 
 void Servo::threadTask()
 {
+    Timer timer;
+    timer.start();
     while (true)
     {
         ThisThread::flags_wait_any(m_ThreadFlag);
+
+        //int time_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
+        //printf("%d\n", time_mus);
 
         if (isEnabled())
         {
             // increment to position
             m_Motion.incrementToPosition(m_pulse, 1.0e-6f * static_cast<float>(PERIOD_MUS));
+
+            int time_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
+            const float smooth_position = m_Motion.getPosition();
+            const float smooth_velocity = m_Motion.getVelocity();
+            //printf("%.6f \n",m_pulse);
+            printf("%d, %.6f, %.6f, %.6f\n", time_mus, m_pulse, smooth_position, smooth_velocity);
 
             // convert to pulse width
             const uint16_t pulse_mus = static_cast<uint16_t>(m_Motion.getPosition() * static_cast<float>(PERIOD_MUS));

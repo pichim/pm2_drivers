@@ -9,7 +9,7 @@ AvgFilter::~AvgFilter() {}
 
 void AvgFilter::init(uint8_t N)
 {
-    m_N = _N;
+    m_N = N;
     m_ring_buffer = (float *)malloc(m_N * sizeof(float));
     reset();
 }
