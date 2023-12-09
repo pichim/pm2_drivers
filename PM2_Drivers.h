@@ -2,6 +2,7 @@
 #include "EncoderCounter.h"
 #include "Servo.h"
 #include "SpeedController.h"
+#include "DCMotor.h"
 #include "PositionController.h"
 #include "FastPWM/FastPWM.h"
 #include "RangeFinder.h"
