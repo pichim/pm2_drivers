@@ -8,9 +8,7 @@
  */
 class AvgFilter
 {
-
 public:
-
     AvgFilter(){};
     AvgFilter(uint8_t N);
     virtual ~AvgFilter();

@@ -3,7 +3,6 @@
 
 class PID_Cntrl
 {
-
 public:
     PID_Cntrl(float I, float Ts, float uMin, float uMax);
     PID_Cntrl(float P, float I, float Ts, float uMin, float uMax);
@@ -15,8 +14,7 @@ public:
 
     virtual ~PID_Cntrl();
 
-    void reset();
-    void reset(float initValue);
+    void reset(float initValue = 0.0f);
 
     void setup(float I, float Ts, float uMin, float uMax);
     void setup(float P, float I, float Ts, float uMin, float uMax);
@@ -27,6 +25,7 @@ public:
     void setCoeff_P(float P);
     void setCoeff_I(float I);
     void setCoeff_D(float D);
+    void setCoeff_F(float F);
 
     void scale_PIDT2_param(float scale);
 
@@ -49,6 +48,7 @@ private:
     float P, I, D, tau_f, tau_ro, Ts, uMin, uMax;
     float bi, bd, ad, bf, af;
     float P_init, I_init, D_init;
+    float F{0.0f};
 
     void setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts);
 

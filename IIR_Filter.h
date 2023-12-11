@@ -3,7 +3,6 @@
 
 class IIR_Filter
 {
-
 public:
     IIR_Filter(float T, float Ts);                                          // G(s) = s/(T*s + 1)
     IIR_Filter(float T, float Ts, float K);                                 // G(s) = K/(T*s + 1)

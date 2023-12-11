@@ -38,11 +38,6 @@ PID_Cntrl::PID_Cntrl(float P, float I, float D, float tau_f, float tau_ro, float
 
 PID_Cntrl::~PID_Cntrl() {}
 
-void PID_Cntrl::reset()
-{
-    reset(0.0f);
-}
-
 void PID_Cntrl::reset(float initValue)
 {
     IPart = initValue;
@@ -110,6 +105,11 @@ void PID_Cntrl::setCoeff_D(float D)
     updateCoeff_D(D, Ts, tau_f);
 }
 
+void PID_Cntrl::setCoeff_F(float F)
+{
+    this->F = F;
+}
+
 void PID_Cntrl::scale_PIDT2_param(float scale)
 {
     P = P_init * scale;
@@ -130,11 +130,6 @@ float PID_Cntrl::update(float e)
     float u = P * e + IPart + Dpart;
     uf = saturate(bf * (u + u_old) - af * uf, uMin, uMax);
     u_old = u;
-    return uf;
-}
-
-float PID_Cntrl::get_current_output(void)
-{
     return uf;
 }
 
@@ -160,7 +155,7 @@ float PID_Cntrl::update(float w, float y_p, float y_i, float y_d)
         IPart = 0.0;
     Dpart = bd * (y_d - d_old) - ad * Dpart;
     d_old = y_d;
-    float u = P * (w - y_p) + IPart - Dpart;
+    float u = P * (w - y_p) + IPart - Dpart + F * w;
     uf = saturate(bf * (u + u_old) - af * uf, uMin, uMax);
     u_old = u;
     return uf;
@@ -199,6 +194,11 @@ float PID_Cntrl::get_ad()
     return ad;
 }
 
+float PID_Cntrl::get_current_output(void)
+{
+    return uf;
+}
+
 void PID_Cntrl::setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts)
 {
     /* store parameters */
@@ -216,19 +216,6 @@ void PID_Cntrl::setCoefficients(float P, float I, float D, float tau_f, float ta
     this->P_init = P;
     this->I_init = I;
     this->D_init = D;
-}
-
-float PID_Cntrl::saturate(float u, float uMin, float uMax)
-{
-    if (u > uMax)
-    {
-        u = uMax;
-    }
-    else if (u < uMin)
-    {
-        u = uMin;
-    }
-    return u;
 }
 
 void PID_Cntrl::updateCoeff_I(float I, float Ts)
@@ -253,4 +240,9 @@ void PID_Cntrl::updateCoeff_RO(float Ts, float tau_ro)
     double tau_ro_d = static_cast<double>(tau_ro);
     bf = static_cast<float>(Ts_d / (Ts_d + 2.0 * tau_ro_d));
     af = static_cast<float>((Ts_d - 2.0 * tau_ro_d) / (Ts_d + 2.0 * tau_ro_d));
+}
+
+float PID_Cntrl::saturate(float u, float uMin, float uMax)
+{
+    return (u > uMax) ? uMax : (u < uMin) ? uMin : u;
 }

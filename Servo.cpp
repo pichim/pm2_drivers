@@ -1,6 +1,6 @@
 #include "Servo.h"
 
-Servo::Servo(PinName pin) : m_DigitalOut(pin) , m_Thread(osPriorityHigh)
+Servo::Servo(PinName pin) : m_DigitalOut(pin), m_Thread(osPriorityHigh)
 {
     // set default acceleration profile
     setMaxAcceleration();
@@ -47,7 +47,7 @@ void Servo::enable(float pulse)
     m_Motion.setPosition(m_pulse);
 
     // attach sendThreadFlag() to ticker so that sendThreadFlag() is called periodically, which signals the thread to execute
-    m_Ticker.attach(callback(this, &Servo::sendThreadFlag), std::chrono::microseconds { PERIOD_MUS });
+    m_Ticker.attach(callback(this, &Servo::sendThreadFlag), std::chrono::microseconds{PERIOD_MUS});
 }
 
 void Servo::disable()
@@ -69,28 +69,19 @@ float Servo::calculateNormalisedPulseWidth(float pulse)
     // it is assumed that after the calibration m_pulse_min != 0.0f and if so
     // we constrain the pulse to the range (0.0f, 1.0f)
     if (m_pulse_min != 0.0f)
-        pulse = (pulse > 1.0f) ? 1.0f : (pulse < 0.0f) ? 0.0f : pulse;
+        pulse = (pulse > 1.0f) ? 1.0f : (pulse < 0.0f) ? 0.0f
+                                                       : pulse;
     return constrainPulse((m_pulse_max - m_pulse_min) * pulse + m_pulse_min);
 }
 
 void Servo::threadTask()
 {
-    // Timer timer;
-    // timer.start();
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
-
-        // int time_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
-        // printf("%d\n", time_mus);
 
         if (isEnabled()) {
             // increment to position
             m_Motion.incrementToPosition(m_pulse, TS);
-
-            // int time_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
-            // const float position_smoothed = m_Motion.getPosition();
-            // const float velocity_smoothed = m_Motion.getVelocity();
-            // printf("%d, %.6f, %.6f, %.6f\n", time_mus, m_pulse, position_smoothed, velocity_smoothed);
 
             // convert to pulse width
             const uint16_t pulse_mus = static_cast<uint16_t>(m_Motion.getPosition() * static_cast<float>(PERIOD_MUS));
@@ -123,5 +114,6 @@ void Servo::sendThreadFlag()
 float Servo::constrainPulse(float pulse) const
 {
     // constrain pulse to range (PWM_MIN, PWM_MAX)
-    return (pulse > PWM_MAX) ? PWM_MAX : (pulse < PWM_MIN) ? PWM_MIN : pulse;
+    return (pulse > PWM_MAX) ? PWM_MAX : (pulse < PWM_MIN) ? PWM_MIN
+                                                           : pulse;
 }

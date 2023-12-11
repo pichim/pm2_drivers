@@ -10,7 +10,7 @@ AvgFilter::~AvgFilter() {}
 void AvgFilter::init(uint8_t N)
 {
     m_N = N;
-    m_ring_buffer = (float *)malloc(m_N * sizeof(float));
+    m_ring_buffer = (float*)malloc(m_N * sizeof(float));
     reset();
 }
 
@@ -19,9 +19,8 @@ void AvgFilter::reset(float val)
     m_val = val;
     const float scaled_val = val / (float)m_N;
     m_idx = 0;
-    for (uint8_t i = 0; i < m_N; i++) {
+    for (uint8_t i = 0; i < m_N; i++)
         m_ring_buffer[i] = scaled_val;
-    }
 }
 
 void AvgFilter::reset()
@@ -41,9 +40,8 @@ float AvgFilter::apply(float inp)
 
     // check if we are at the end of the ringbuffer
     m_idx++;
-    if (m_idx == m_N) {
+    if (m_idx == m_N)
         m_idx = 0;
-    }
 
     return m_val;
 }

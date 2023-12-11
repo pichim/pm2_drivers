@@ -3,7 +3,6 @@
 
 #include "EncoderCounter.h"
 #include "FastPWM/FastPWM.h"
-#include "LowpassFilter.h"
 #include "Motion.h"
 #include "ThreadFlag.h"
 #include "PID_Cntrl.h"
@@ -28,23 +27,21 @@ public:
     float getVoltage() const;
     float getPWM() const;
 
-    void setVelocityCntrlGain(float kp = 5.0f);
-    void setRotationCntrlGain(float p = 10.0f);
+    void setVelocityCntrl(float kp = 3.5f, float ki = 3.5f / 0.02f, float kd = 0.12f);
+    void setRotationCntrlGain(float p = 20.0f);
 
     void setMaxVelocity(float velocity);
-    void setMaxAcceleration(float acceleration = 1.0e6f); // 0.5f
+    void setMaxAcceleration(float acceleration = 5.0f);
 
 private:
-    static constexpr int64_t PERIOD_MUS = 200;
+    static constexpr int64_t PERIOD_MUS = 1000;
     static constexpr float TS = 1.0e-6f * static_cast<float>(PERIOD_MUS);
-    // static constexpr float LOWPASS_FILTER_FREQUENCY_RAD = 120.0f;
     static constexpr float PWM_MIN = 0.01f;
     static constexpr float PWM_MAX = 0.99f;
-    static constexpr int PWM_PERIOD_MUS = 50;
+    static constexpr float ROTATION_ERROR_MAX = 5.0e-3f;
 
     FastPWM m_FastPWM;
     EncoderCounter m_EncoderCounter;
-    // LowpassFilter m_LowpassFilter;
     Motion m_Motion;
     PID_Cntrl m_PID_Cntrl_velocity;
     IIR_Filter m_IIR_Filter_velocity;
@@ -62,14 +59,11 @@ private:
 
     // motor parameters
     float m_counts_per_turn;
-    float m_kn;
     float m_voltage_max;
     float m_velocity_max;
 
-    // controller parameters
-    float m_kp{0.0f};
-    float m_ki{1.0f};
-    float m_p{0.0f};
+    // rotation controller parameter
+    float m_p;
 
     // signals
     short m_counts_previous;

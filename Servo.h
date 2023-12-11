@@ -12,7 +12,8 @@
  * This class provides functionalities to control servo motors with
  * features like calibration, setting motion profiles, and enabling/disabling the servo.
  */
-class Servo {
+class Servo
+{
 public:
     /**
      * @brief Construct a new Servo object.
@@ -82,10 +83,10 @@ private:
     Ticker m_Ticker;
     ThreadFlag m_ThreadFlag;
 
-    bool m_enabled { false };
-    float m_pulse { 0.0f };
-    float m_pulse_min { 0.0f };
-    float m_pulse_max { 1.0f };
+    bool m_enabled{false};
+    float m_pulse{0.0f};
+    float m_pulse_min{0.0f};
+    float m_pulse_max{1.0f};
 
     float calculateNormalisedPulseWidth(float pulse);
     void threadTask();
@@ -95,8 +96,8 @@ private:
     float constrainPulse(float pulse) const;
 
     // deleted copy constructor and copy assignment operator
-    Servo(const Servo&) = delete;
-    Servo& operator=(const Servo&) = delete;
+    Servo(const Servo &) = delete;
+    Servo &operator=(const Servo &) = delete;
 };
 
 #endif /* SERVO_H_ */

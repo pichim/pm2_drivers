@@ -4,37 +4,26 @@
 #include "DCMotor.h"
 
 DCMotor::DCMotor(PinName pin_pwm, PinName pin_enc_a, PinName pin_enc_b, float counts_per_turn, float kn, float voltage_max)
-    : m_FastPWM(pin_pwm), m_EncoderCounter(pin_enc_a, pin_enc_b), m_Thread(osPriorityHigh, 4096)
+    : m_FastPWM(pin_pwm),
+      m_EncoderCounter(pin_enc_a, pin_enc_b),
+      m_Thread(osPriorityHigh, 4096)
 {
     // motor parameters
     m_counts_per_turn = counts_per_turn;
-    m_kn = kn / 60.0f;
     m_voltage_max = voltage_max;
-    m_velocity_max = 0.8f * m_kn * voltage_max; // only allow 80% of theoretical maximum speed
+    m_velocity_max = 0.8f * kn / 60.0f * voltage_max; // only allow 80% of theoretical maximum speed
 
-    // default controller gains
-    setVelocityCntrlGain();
+    // default controller parameters
+    setVelocityCntrl();
+    if (kn != 0.0f)
+        m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
     setRotationCntrlGain();
-
-    // pid controller
-    m_PID_Cntrl_velocity.setup(2.0f,
-                               2.0f / 0.01f,
-                               0.08f,
-                               1.0f / (2.0f * M_PI * 10.0f),
-                               1.0f / (2.0f * M_PI * 20.0f),
-                               TS,
-                               m_voltage_max * (2.0f * PWM_MIN - 1.0f),
-                               m_voltage_max * (2.0f * PWM_MAX - 1.0f));
 
     // iir filter
     m_IIR_Filter_velocity.setup(2.0f * M_PI * 20.0f,
                                 1.0f,
                                 TS,
                                 1.0f);
-
-    // initialise pwm
-    m_FastPWM.period_mus(PWM_PERIOD_MUS); // pwm period of 50 us
-    m_FastPWM.write(0.5f);                // duty-cycle of 50% -> 0V
 
     // initialise control signals
     m_counts_previous = m_EncoderCounter.read();
@@ -47,10 +36,6 @@ DCMotor::DCMotor(PinName pin_pwm, PinName pin_enc_a, PinName pin_enc_b, float co
     m_velocity = 0.0f;
     m_voltage = 0.0f;
     m_pwm = 0.0f;
-
-    // m_LowpassFilter.setPeriod(TS);
-    // m_LowpassFilter.setFrequency(LOWPASS_FILTER_FREQUENCY_RAD);
-    // m_LowpassFilter.reset(0.0f);
 
     m_Motion.setPosition(0.0f);
     m_Motion.setProfileVelocity(m_velocity_max);
@@ -121,9 +106,15 @@ float DCMotor::getPWM() const
     return m_pwm;
 }
 
-void DCMotor::setVelocityCntrlGain(float kp)
+void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
 {
-    m_kp = kp;
+    m_PID_Cntrl_velocity.setup(kp,
+                               ki,
+                               kd,
+                               1.0f / (2.0f * M_PI * 10.0f),
+                               TS,
+                               m_voltage_max * (2.0f * PWM_MIN - 1.0f),
+                               m_voltage_max * (2.0f * PWM_MAX - 1.0f));
 }
 
 void DCMotor::setRotationCntrlGain(float p)
@@ -156,63 +147,50 @@ void DCMotor::threadTask()
     // printf("PWM_MIN_: %f\n", 0.5f + 0.5f * voltage_min_ / m_voltage_max);
     // printf("PWM_MAX_: %f\n", 0.5f + 0.5f * voltage_max_ / m_voltage_max);
 
-    while (true)
-    {
+    while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
 
         // update signals
         const short counts = m_EncoderCounter.read();
-        const float rotation_increment = static_cast<float>(counts - m_counts_previous) / m_counts_per_turn;
+        float rotation_increment = static_cast<float>(counts - m_counts_previous) / m_counts_per_turn;
         m_counts_previous = counts;
 
         m_rotation = m_rotation + rotation_increment;
-        // m_velocity = m_LowpassFilter.filter(rotation_increment / TS);
         m_velocity = m_IIR_Filter_velocity.filter(rotation_increment / TS);
 
         float velocity_setpoint = 0.0f;
         switch (m_cntrlMode) {
             case CntrlMode::Rotation:
+                // increment motion planner to position
                 m_Motion.incrementToPosition(m_rotation_target, TS);
                 m_rotation_setpoint = m_Motion.getPosition();
-                // m_rotation_setpoint = m_rotation_target;
-                // update p-position controller
-                velocity_setpoint = m_p * (m_rotation_setpoint - m_rotation);
+                // only set velocity_setpoint if abs of the rotation error is greater than ROTATION_ERROR_MAX
+                if (fabs(m_rotation_setpoint - m_rotation) > ROTATION_ERROR_MAX)
+                    velocity_setpoint = m_p * (m_rotation_setpoint - m_rotation);
                 break;
 
             case CntrlMode::Velocity:
+                // increment motion planner to velocity
                 m_Motion.incrementToVelocity(m_velocity_target, TS);
                 velocity_setpoint = m_Motion.getVelocity();
                 // velocity_setpoint = m_velocity_target;
                 break;
 
             default:
-                break;
+                break; // should not happen
         }
 
         // constrain velocity to (-m_velocity_max, m_velocity_max)
-        velocity_setpoint = (velocity_setpoint > m_velocity_max) ? m_velocity_max : (velocity_setpoint < -m_velocity_max) ? -m_velocity_max : velocity_setpoint;
+        velocity_setpoint = (velocity_setpoint > m_velocity_max) ? m_velocity_max : (velocity_setpoint < -m_velocity_max) ? -m_velocity_max
+                                                                                                                          : velocity_setpoint;
 
-        // // // update p-controller with feedforward
-        // // float voltage = m_kp * (velocity_setpoint - m_velocity) + velocity_setpoint / m_kn;
-        // // static float voltage_min = m_voltage_max * (2.0f * PWM_MIN - 1.0f);
-        // // static float voltage_max = m_voltage_max * (2.0f * PWM_MAX - 1.0f);
-        // // voltage = (voltage > voltage_max) ? voltage_max : (voltage < voltage_min) ? voltage_min : voltage;
-        // static float voltage_min = m_voltage_max * (2.0f * PWM_MIN - 1.0f);
-        // static float voltage_max = m_voltage_max * (2.0f * PWM_MAX - 1.0f);
-        // static float voltage_previous = 0.0f;
-        // float voltage = voltage_previous + m_ki * (velocity_setpoint - rotation_increment / TS) * TS;
-        // voltage = (voltage > voltage_max) ? voltage_max : (voltage < voltage_min) ? voltage_min : voltage;
-        // voltage_previous = voltage;
-        // voltage += m_kp * (velocity_setpoint - m_velocity) + 0.0f * velocity_setpoint / m_kn;
-        // voltage = (voltage > voltage_max) ? voltage_max : (voltage < voltage_min) ? voltage_min : voltage;
+        const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
+                                                          m_velocity,              // y_p
+                                                          rotation_increment / TS, // y_i
+                                                          m_velocity);             // y_d
 
-        // const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint, m_velocity, rotation_increment / TS, m_velocity);
-        const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint - rotation_increment / TS, m_velocity);
-
-        // calculate and constrain pwm to (PWM_MIN, PWM_MAX)
+        // calculate pwm and write output
         const float pwm = 0.5f + 0.5f * voltage / m_voltage_max;
-
-        // set duty cycle
         m_FastPWM.write(pwm);
 
         // update signals
