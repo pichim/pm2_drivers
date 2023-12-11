@@ -29,11 +29,11 @@ PulseInOut::~PulseInOut()
 {
 }
 
-void PulseInOut::write(int val)
-{
-    io.output();
-    io = val;
-}
+// void PulseInOut::write(int val)
+// {
+//     io.output();
+//     io = val;
+// }
 
 void PulseInOut::write_us(int val, int time)
 {
@@ -43,23 +43,23 @@ void PulseInOut::write_us(int val, int time)
     io = !val;
 }
 
-int PulseInOut::read_high_us()
-{
-    pulsetime.reset();
-    io.input();
-    while (io == 1)
-    {
-    }
-    while (io == 0)
-    {
-    }
-    pulsetime.start();
-    while (io == 1)
-    {
-    }
-    pulsetime.stop();
-    return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
-}
+// int PulseInOut::read_high_us()
+// {
+//     pulsetime.reset();
+//     io.input();
+//     while (io == 1)
+//     {
+//     }
+//     while (io == 0)
+//     {
+//     }
+//     pulsetime.start();
+//     while (io == 1)
+//     {
+//     }
+//     pulsetime.stop();
+//     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
+// }
 
 int PulseInOut::read_high_us(int timeout)
 {
@@ -67,19 +67,16 @@ int PulseInOut::read_high_us(int timeout)
     runtime.start();
     pulsetime.reset();
     io.input();
-    while (io == 1)
-    {
+    while (io == 1) {
         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
             return -1;
     }
-    while (io == 0)
-    {
+    while (io == 0) {
         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
             return -1;
     }
     pulsetime.start();
-    while (io == 1)
-    {
+    while (io == 1) {
         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
             return -1;
     }
@@ -87,84 +84,84 @@ int PulseInOut::read_high_us(int timeout)
     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
 }
 
-int PulseInOut::read_low_us()
-{
-    pulsetime.reset();
-    io.input();
-    while (io == 0)
-    {
-    }
-    while (io == 1)
-    {
-    }
-    pulsetime.start();
-    while (io == 0)
-    {
-    }
-    pulsetime.stop();
-    return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
-}
+// int PulseInOut::read_low_us()
+// {
+//     pulsetime.reset();
+//     io.input();
+//     while (io == 0)
+//     {
+//     }
+//     while (io == 1)
+//     {
+//     }
+//     pulsetime.start();
+//     while (io == 0)
+//     {
+//     }
+//     pulsetime.stop();
+//     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
+// }
 
-int PulseInOut::read_low_us(int timeout)
-{
-    runtime.reset();
-    runtime.start();
-    pulsetime.reset();
-    io.input();
-    while (io == 0)
-    {
-        if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
-            return -1;
-    }
-    while (io == 1)
-    {
-        if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
-            return -1;
-    }
-    pulsetime.start();
-    while (io == 0)
-    {
-        if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
-            return -1;
-    }
-    pulsetime.stop();
-    return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
-}
+// int PulseInOut::read_low_us(int timeout)
+// {
+//     runtime.reset();
+//     runtime.start();
+//     pulsetime.reset();
+//     io.input();
+//     while (io == 0)
+//     {
+//         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
+//             return -1;
+//     }
+//     while (io == 1)
+//     {
+//         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
+//             return -1;
+//     }
+//     pulsetime.start();
+//     while (io == 0)
+//     {
+//         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
+//             return -1;
+//     }
+//     pulsetime.stop();
+//     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
+// }
 
-int PulseInOut::read_us()
-{
-    pulsetime.reset();
-    io.input();
-    startval = io;
-    while (io == startval)
-    {
-    }
-    pulsetime.start();
-    while (io != startval)
-    {
-    }
-    pulsetime.stop();
-    return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
-}
+// int PulseInOut::read_us()
+// {
+//     pulsetime.reset();
+//     io.input();
+//     startval = io;
+//     while (io == startval)
+//     {
+//     }
+//     pulsetime.start();
+//     while (io != startval)
+//     {
+//     }
+//     pulsetime.stop();
+//     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
+// }
 
-int PulseInOut::read_us(int timeout)
-{
-    runtime.reset();
-    runtime.start();
-    pulsetime.reset();
-    io.input();
-    startval = io;
-    while (io == startval)
-    {
-        if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
-            return -1;
-    }
-    pulsetime.start();
-    while (io != startval)
-    {
-        if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
-            return -1;
-    }
-    pulsetime.stop();
-    return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
-}
+// int PulseInOut::read_us(int timeout)
+// {
+//     runtime.reset();
+//     runtime.start();
+//     pulsetime.reset();
+//     io.input();
+//     startval = io;
+//     while (io == startval)
+//     {
+//         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
+//             return -1;
+//     }
+//     pulsetime.start();
+//     while (io != startval)
+//     {
+//         if (std::chrono::duration_cast<std::chrono::microseconds>(runtime.elapsed_time()).count() > timeout)
+//             return -1;
+//     }
+//     pulsetime.stop();
+//     return std::chrono::duration_cast<std::chrono::microseconds>(pulsetime.elapsed_time()).count();
+// }

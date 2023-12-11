@@ -35,36 +35,44 @@ public:
      */
     PulseInOut(PinName);
     ~PulseInOut();
-    /** Set the value of the pin
-     * @param val Value to set, 0 for LOW, otherwise HIGH
-     */
-    void write(int val);
-    /** Send a pulse of a given value for a specified time
-     * @param val Value to set, 0 for LOW, otherwise HIGH
-     * @param time Length of pulse in microseconds
-     */
+
+    // /** Set the value of the pin
+    //  * @param val Value to set, 0 for LOW, otherwise HIGH
+    //  */
+    // void write(int val);
+    // /** Send a pulse of a given value for a specified time
+    //  * @param val Value to set, 0 for LOW, otherwise HIGH
+    //  * @param time Length of pulse in microseconds
+    //  */
+
     void write_us(int val, int time);
     /** Return the length of the next HIGH pulse in microsconds
      */
-    int read_high_us();
-    /** Return the length of the next HIGH pulse in microseconds or -1 if longer than timeout
-     * @param timeout Time before pulse reading aborts and returns -1, in microseconds
-     */
+
+    // int read_high_us();
+    // /** Return the length of the next HIGH pulse in microseconds or -1 if longer than timeout
+    //  * @param timeout Time before pulse reading aborts and returns -1, in microseconds
+    //  */
+
     int read_high_us(int timeout);
     /** Return the length of the next LOW pulse in microsconds
      */
-    int read_low_us();
-    /** Return the length of the next LOW pulse in microseconds or -1 if longer than timeout
-     * @param timeout Time before pulse reading aborts and returns -1, in microseconds
-     */
-    int read_low_us(int timeout);
-    /** Return the length of the next pulse in microsconds
-     */
-    int read_us();
-    /** Return the length of the next pulse in microseconds or -1 if longer than timeout
-     * @param timeout Time before pulse reading aborts and returns -1, in microseconds
-     */
-    int read_us(int timeout);
+
+    // int read_low_us();
+    // /** Return the length of the next LOW pulse in microseconds or -1 if longer than timeout
+    //  * @param timeout Time before pulse reading aborts and returns -1, in microseconds
+    //  */
+
+    // int read_low_us(int timeout);
+    // /** Return the length of the next pulse in microsconds
+    //  */
+
+    // int read_us();
+    // /** Return the length of the next pulse in microseconds or -1 if longer than timeout
+    //  * @param timeout Time before pulse reading aborts and returns -1, in microseconds
+    //  */
+
+    // int read_us(int timeout);
 
 private:
     int startval;

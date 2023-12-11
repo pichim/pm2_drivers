@@ -31,6 +31,7 @@ DebounceIn::DebounceIn(PinName pin, PinMode mode) :
     _cb[1] = NULL;
 }
 
+
 void DebounceIn::rise(Callback<void()> cb, microseconds timeout) {
     if (cb) {
         _cb[0] = cb;
@@ -44,17 +45,9 @@ void DebounceIn::rise(Callback<void()> cb, microseconds timeout) {
     }
 }
 
-void DebounceIn::fall(Callback<void()> cb, microseconds timeout) {
-    if (cb) {
-        _cb[1] = cb;
-        _timeout_interval[1] = timeout;
-        _interrupt.fall(callback(this, &DebounceIn::intFallCb));
-
-    } else {
-        _cb[1] = NULL;
-        _interrupt.fall(NULL);
-        _timeout[1].detach();
-    }
+void DebounceIn::intRiseCb() {
+    _timeout[0].attach(callback(this, &DebounceIn::timeoutRiseCb), _timeout_interval[0]);
+    _interrupt.rise(NULL);  // detach interrupt
 }
 
 void DebounceIn::timeoutRiseCb() {
@@ -67,9 +60,18 @@ void DebounceIn::timeoutRiseCb() {
     _interrupt.rise(callback(this, &DebounceIn::intRiseCb));
 }
 
-void DebounceIn::intRiseCb() {
-    _timeout[0].attach(callback(this, &DebounceIn::timeoutRiseCb), _timeout_interval[0]);
-    _interrupt.rise(NULL);  // detach interrupt
+
+void DebounceIn::fall(Callback<void()> cb, microseconds timeout) {
+    if (cb) {
+        _cb[1] = cb;
+        _timeout_interval[1] = timeout;
+        _interrupt.fall(callback(this, &DebounceIn::intFallCb));
+
+    } else {
+        _cb[1] = NULL;
+        _interrupt.fall(NULL);
+        _timeout[1].detach();
+    }
 }
 
 void DebounceIn::timeoutFallCb() {
@@ -86,6 +88,7 @@ void DebounceIn::intFallCb() {
     _timeout[1].attach(callback(this, &DebounceIn::timeoutFallCb), _timeout_interval[1]);
     _interrupt.fall(NULL);  // detach interrupt
 }
+
 
 int32_t DebounceIn::read() {
     return _interrupt.read();
