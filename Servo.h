@@ -1,10 +1,40 @@
+/**
+ * @file Servo.h
+ * @brief This file defines the Servo class, which is used for controlling servo motors.
+ *
+ * The Servo class provides a range of functionalities for smooth and precise control of servo motors. 
+ * It includes capabilities for calibrating the servo's pulse width range, setting motion profiles,
+ * and enabling or disabling the servo. The class is designed to work with a variety of servo motors 
+ * by allowing the user to specify the minimum and maximum pulse widths for calibration.
+ *
+ * @dependencies
+ * This class relies on the following components:
+ * - Motion: For handling motion profiles and acceleration control.
+ * - ThreadFlag: For managing threading and synchronization.
+ *
+ * Usage:
+ * To use the Servo class, create an instance with the pin connected to the servo motor.
+ * Calibrate the servo using calibratePulseMinMax(), set motion profiles using setMaxAcceleration(),
+ * and control the servo using enable(), disable(), and setNormalisedPulseWidth() methods.
+ * The state of the servo can be checked with isEnabled().
+ *
+ * Example:
+ * ```
+ * Servo servo(PIN_NAME);
+ * servo.calibratePulseMinMax(0.0150f, 0.1150f)
+ * servo.setMaxAcceleration(3.0f);
+ * servo.enable();
+ * ```
+ *
+ * @author M. E. Peter
+ * @date 11.12.2023
+ */
+
 #ifndef SERVO_H_
 #define SERVO_H_
 
 #include "Motion.h"
 #include "ThreadFlag.h"
-
-// #define PRINT_FOR_DEBUG true
 
 /**
  * @brief Class for smooth control of a servo motor.
@@ -94,10 +124,6 @@ private:
     void disableDigitalOutput();
     void sendThreadFlag();
     float constrainPulse(float pulse) const;
-
-    // deleted copy constructor and copy assignment operator
-    Servo(const Servo &) = delete;
-    Servo &operator=(const Servo &) = delete;
 };
 
 #endif /* SERVO_H_ */

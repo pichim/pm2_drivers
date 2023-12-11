@@ -136,17 +136,6 @@ void DCMotor::setMaxAcceleration(float acceleration)
 
 void DCMotor::threadTask()
 {
-    // float voltage_min_ = m_voltage_max * (2.0f * PWM_MIN - 1.0f);
-    // float voltage_max_ = m_voltage_max * (2.0f * PWM_MAX - 1.0f);
-    // printf("m_counts_per_turn: %f\n", m_counts_per_turn);
-    // printf("m_kn: %f\n", m_kn);
-    // printf("m_voltage_max: %f\n", m_voltage_max);
-    // printf("m_velocity_max: %f\n", m_velocity_max);
-    // printf("voltage_min: %f\n", voltage_min_);
-    // printf("voltage_max: %f\n", voltage_max_);
-    // printf("PWM_MIN_: %f\n", 0.5f + 0.5f * voltage_min_ / m_voltage_max);
-    // printf("PWM_MAX_: %f\n", 0.5f + 0.5f * voltage_max_ / m_voltage_max);
-
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
 
@@ -181,8 +170,9 @@ void DCMotor::threadTask()
         }
 
         // constrain velocity to (-m_velocity_max, m_velocity_max)
-        velocity_setpoint = (velocity_setpoint > m_velocity_max) ? m_velocity_max : (velocity_setpoint < -m_velocity_max) ? -m_velocity_max
-                                                                                                                          : velocity_setpoint;
+        velocity_setpoint = (velocity_setpoint >  m_velocity_max) ?  m_velocity_max :
+                            (velocity_setpoint < -m_velocity_max) ? -m_velocity_max :
+                             velocity_setpoint;
 
         const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
                                                           m_velocity,              // y_p

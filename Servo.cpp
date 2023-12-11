@@ -69,8 +69,7 @@ float Servo::calculateNormalisedPulseWidth(float pulse)
     // it is assumed that after the calibration m_pulse_min != 0.0f and if so
     // we constrain the pulse to the range (0.0f, 1.0f)
     if (m_pulse_min != 0.0f)
-        pulse = (pulse > 1.0f) ? 1.0f : (pulse < 0.0f) ? 0.0f
-                                                       : pulse;
+        pulse = (pulse > 1.0f) ? 1.0f : (pulse < 0.0f) ? 0.0f : pulse;
     return constrainPulse((m_pulse_max - m_pulse_min) * pulse + m_pulse_min);
 }
 
