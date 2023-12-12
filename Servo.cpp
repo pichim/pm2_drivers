@@ -1,6 +1,6 @@
 #include "Servo.h"
 
-Servo::Servo(PinName pin) : m_DigitalOut(pin), m_Thread(osPriorityHigh)
+Servo::Servo(PinName pin) : m_DigitalOut(pin), m_Thread(osPriorityAboveNormal1)
 {
     // set default acceleration profile
     setMaxAcceleration();
