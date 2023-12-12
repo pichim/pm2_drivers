@@ -24,8 +24,10 @@
  * Example:
  * ```
  * DCMotor motor(PIN_PWM, PIN_ENC_A, PIN_ENC_B, COUNTS_PER_TURN, KN, VOLTAGE_MAX);
- * motor.setVelocity(1.5f);
- * float currentVelocity = motor.getVelocity();
+ * motor.setVelocity(1.5f); // command velocity to 1.5 rotations per second
+ * float currentVelocity = motor.getVelocity(); // read current velocity
+ * motor.setRotation(5.0f); // command rotation to 5
+ * motor.getRotation(); // read current rotation
  * ```
  *
  * @author M. E. Peter

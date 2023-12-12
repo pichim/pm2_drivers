@@ -24,6 +24,7 @@
  * servo.calibratePulseMinMax(0.0150f, 0.1150f)
  * servo.setMaxAcceleration(3.0f);
  * servo.enable();
+ * servo.setNormalisedPulseWidth(0.5f); // set servo to mid position
  * ```
  *
  * @author M. E. Peter

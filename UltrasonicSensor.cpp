@@ -19,7 +19,7 @@ UltrasonicSensor::~UltrasonicSensor()
     m_Timeout.detach();
 }
 
-float UltrasonicSensor::read_cm()
+float UltrasonicSensor::read()
 {
     if (m_is_new_value) {
         m_is_new_value = false;

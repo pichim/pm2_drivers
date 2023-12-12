@@ -1,3 +1,36 @@
+/**
+ * @file UltrasonicSensor.h
+ * @brief This file defines the UltrasonicSensor class, used for measuring distances using an ultrasonic sensor Groove Ultrasonic Ranger V2.0.
+ *
+ * The UltrasonicSensor class provides functionality to measure distances by emitting ultrasonic pulses 
+ * and measuring the time taken for the echo to return. It encapsulates the details of interfacing with the
+ * sensor hardware and offers a simple interface for obtaining distance measurements in centimeters.
+ * Maximum measurment distance is approximately 2 meters (measured 198.1 cm) with a mearuement period of 12000 microseconds.
+ *
+ * @dependencies
+ * This class relies on the following components:
+ * - DigitalInOut: For toggling the ultrasonic sensor's pin between output and input.
+ * - InterruptIn: For detecting the echo signal.
+ * - Timer: For measuring the time interval of the echo.
+ * - Timeout: For managing pulse emission timing.
+ * - ThreadFlag: For managing threading and synchronization.
+ *
+ * Usage:
+ * To use the UltrasonicSensor class, create an instance with the pin connected to the sensor.
+ * Measure the distance using read(). The class also provides an operator float() for direct reading.
+ *
+ * Example:
+ * ```
+ * UltrasonicSensor ultrasonicSensor(PIN_NAME);
+ * float distance = ultrasonicSensor.read();
+ * // or simply
+ * float distance = ultrasonicSensor;
+ * ```
+ *
+ * @author M. E. Peter
+ * @date 12.12.2023
+ */
+
 #ifndef ULTRASONIC_SENSOR_H_
 #define ULTRASONIC_SENSOR_H_
 
@@ -11,19 +44,39 @@
 // ->  12105 ,        200
 //     12000 ,        198.1  (measured)
 
-
 class UltrasonicSensor
 {
 public:
+    /**
+     * @brief Construct a new UltrasonicSensor object.
+     *
+     * @param pin The pin name to which the ultrasonic sensor is connected.
+     */
     explicit UltrasonicSensor(PinName pin);
+
+    /**
+     * @brief Destroy the UltrasonicSensor object.
+     */
     virtual ~UltrasonicSensor();
 
-    // create an operator to access read()
-    operator float() {
-        return read_cm();
-    }
+    /**
+     * @brief Overloaded float operator to read distance.
+     *
+     * Enables reading the distance measurement directly from an UltrasonicSensor object.
+     * Equivalent to calling read().
+     *
+     * @return float The distance in centimeters.
+     */
+    operator float();
 
-    float read_cm();
+    /**
+     * @brief Read the measured distance in centimeters.
+     *
+     * Triggers an ultrasonic pulse and measures the distance based on the echo time.
+     *
+     * @return float The distance in centimeters.
+     */
+    float read();
 
 private:
     static constexpr int64_t PERIOD_MUS = 12000;
