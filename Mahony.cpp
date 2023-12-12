@@ -16,10 +16,15 @@ Mahony::Mahony()
 Mahony::Mahony(float kp, float ki, float Ts)
 {
     initialise();
-    Setup(kp, ki, Ts);
+    setup(kp, ki, Ts);
 }
 
-void Mahony::Update(Eigen::Vector3f gyro, Eigen::Vector3f acc)
+Mahony::~Mahony()
+{
+    
+}
+
+void Mahony::update(Eigen::Vector3f gyro, Eigen::Vector3f acc)
 {
     Eigen::Vector3f g_n(                                          2.0f * ( m_quat.x()*m_quat.z() - m_quat.w()*m_quat.y() ),
                                                                   2.0f * ( m_quat.y()*m_quat.z() + m_quat.w()*m_quat.x() ),
@@ -30,7 +35,7 @@ void Mahony::Update(Eigen::Vector3f gyro, Eigen::Vector3f acc)
     updateOrientation(gyro, e);
 }
 
-void Mahony::Update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f mag)
+void Mahony::update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f mag)
 {
     Eigen::Matrix3f R = m_quat.toRotationMatrix();
 
@@ -47,30 +52,35 @@ void Mahony::Update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f m
     updateOrientation(gyro, e);
 }
 
-Eigen::Quaternionf Mahony::GetOrientationAsQuaternion()
+Eigen::Quaternionf Mahony::getOrientationAsQuaternion() const
 {
     return m_quat;
 }
 
-Eigen::Vector3f Mahony::GetOrientationAsRPYAngles()
+Eigen::Vector3f Mahony::getOrientationAsRPYAngles() const
 {
     return m_rpy;
 }
 
-float Mahony::GetTiltAngle()
+float Mahony::getTiltAngle() const
 {
     return m_tilt;
 }
 
-Mahony::~Mahony()
+void Mahony::setup(float kp, float ki, float Ts)
 {
-    
+    setGains(kp, ki);
+    setSamplingTime(Ts);
 }
 
-void Mahony::Setup(float kp, float ki, float Ts)
+void Mahony::setGains(float kp, float ki)
 {
     m_kp = kp;
     m_ki = ki;
+}
+
+void Mahony::setSamplingTime(float Ts)
+{
     m_Ts = Ts;
 }
 

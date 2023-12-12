@@ -1,33 +1,35 @@
 #include "IMUThread.h"
-#include <chrono>
-#include <cstdint>
 
-IMUThread::IMUThread(Data& data, Mutex& mutex) :
-    m_data(data),
-    m_imu(IMU_PIN_SDA, IMU_PIN_SCL),
-    m_mahony(Param::IMU::kp, Param::IMU::ki, IMU_THREAD_TS_MS * 1.0e-3f),
-    m_thread(IMU_THREAD_PRIORITY, IMU_THREAD_SIZE),
-    m_dataMutex(mutex)
+IMUThread::IMUThread() : m_ImuLSM9DS1(IMU_PIN_SDA, IMU_PIN_SCL),
+                         m_Mahony(Parameters::kp, Parameters::ki, IMU_THREAD_TS_MS * 1.0e-3f),
+                         m_Thread(IMU_THREAD_PRIORITY, IMU_THREAD_SIZE)
 {
 #if (IMU_THREAD_DO_USE_MAG_FOR_MAHONY_UPDATE && IMU_DO_USE_STATIC_MAG_CALIBRATION)
-    m_magCalib.SetCalibrationParameter(Param::IMU::A_mag, Param::IMU::b_mag);   
+    m_magCalib.setCalibrationParameter(Parameters::A_mag, Parameters::b_mag);
 #endif
+    startThread();
 }
 
 IMUThread::~IMUThread()
 {
-    m_ticker.detach();
+    m_Ticker.detach();
+    m_Thread.terminate();
 }
 
-void IMUThread::StartThread()
+ImuData IMUThread::getImuData() const
 {
-    m_thread.start(callback(this, &IMUThread::run));
-    m_ticker.attach(callback(this, &IMUThread::sendThreadFlag), std::chrono::milliseconds{ static_cast<long int>( IMU_THREAD_TS_MS ) });
+    return m_ImuData;
 }
 
-void IMUThread::run()
-{        
-    static const uint16_t Navg = (uint16_t)( 1.0f / (IMU_THREAD_TS_MS * 1.0e-3f) );
+void IMUThread::startThread()
+{
+    m_Thread.start(callback(this, &IMUThread::threadTask));
+    m_Ticker.attach(callback(this, &IMUThread::sendThreadFlag), std::chrono::milliseconds{static_cast<int64_t>(IMU_THREAD_TS_MS)});
+}
+
+void IMUThread::threadTask()
+{
+    static const uint16_t Navg = static_cast<uint16_t>(1.0f / (IMU_THREAD_TS_MS * 1.0e-3f));
     static uint16_t avg_cntr = 0;
     static bool imu_is_calibrated = false;
     static Eigen::Vector3f gyro_offset;
@@ -37,60 +39,57 @@ void IMUThread::run()
     static Timer timer;
     timer.start();
 
-    while(true) {
-        ThisThread::flags_wait_any(m_threadFlag);
+    while (true) {
+        ThisThread::flags_wait_any(m_ThreadFlag);
 
-        m_imu.updateGyro();
-        m_imu.updateAcc();
-        Eigen::Vector3f gyro(m_imu.readGyroX(), m_imu.readGyroY(), m_imu.readGyroZ());       
-        Eigen::Vector3f acc (m_imu.readAccX() , m_imu.readAccY() , m_imu.readAccZ() );
+        m_ImuLSM9DS1.updateGyro();
+        m_ImuLSM9DS1.updateAcc();
+        Eigen::Vector3f gyro(m_ImuLSM9DS1.readGyroX(), m_ImuLSM9DS1.readGyroY(), m_ImuLSM9DS1.readGyroZ());
+        Eigen::Vector3f acc(m_ImuLSM9DS1.readAccX(), m_ImuLSM9DS1.readAccY(), m_ImuLSM9DS1.readAccZ());
 
 #if IMU_THREAD_DO_USE_MAG_FOR_MAHONY_UPDATE
-        m_imu.updateMag();
-        Eigen::Vector3f mag (m_imu.readMagX() , m_imu.readMagY() , m_imu.readMagZ() );
+        m_ImuLSM9DS1.updateMag();
+        Eigen::Vector3f mag(m_ImuLSM9DS1.readMagX(), m_ImuLSM9DS1.readMagY(), m_ImuLSM9DS1.readMagZ());
 #else
         static Eigen::Vector3f mag = Eigen::Vector3f::Zero();
 #endif
 
         if (!imu_is_calibrated) {
             gyro_offset += gyro;
-            acc_offset  += acc;
+            acc_offset += acc;
             avg_cntr++;
             if (avg_cntr == Navg) {
                 imu_is_calibrated = true;
                 gyro_offset /= avg_cntr;
-                acc_offset  /= avg_cntr;
+                acc_offset /= avg_cntr;
                 // we have to keep gravity in acc z direction
                 acc_offset(2) = 0.0f;
 #if IMU_DO_USE_STATIC_ACC_CALIBRATION
-                acc_offset = Param::IMU::b_acc;
+                acc_offset = Parameters::b_acc;
 #else
-                printf("Averaged acc offset: %.7ff, %.7ff, %.7f\n", acc_offset(0), acc_offset(1), acc_offset(2) );
+                printf("Averaged acc offset: %.7ff, %.7ff, %.7f\n", acc_offset(0), acc_offset(1), acc_offset(2));
 #endif
             }
         }
-        
+
         if (imu_is_calibrated) {
             gyro -= gyro_offset;
             acc -= acc_offset;
 
 #if IMU_THREAD_DO_USE_MAG_FOR_MAHONY_UPDATE
-            mag = m_magCalib.ApplyCalibration(mag);
-            m_mahony.Update(gyro, acc, mag);
+            mag = m_magCalib.applyCalibration(mag);
+            m_Mahony.update(gyro, acc, mag);
 #else
-            m_mahony.Update(gyro, acc);
+            m_Mahony.update(gyro, acc);
 #endif
 
             // update data object
-            m_dataMutex.lock();
-            m_data.t = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
-            m_data.gyro = gyro;
-            m_data.acc = acc;
-            m_data.mag = mag;
-            m_data.quat = m_mahony.GetOrientationAsQuaternion();
-            m_data.rpy = m_mahony.GetOrientationAsRPYAngles();
-            m_data.tilt = m_mahony.GetTiltAngle();
-            m_dataMutex.unlock();
+            m_ImuData.gyro = gyro;
+            m_ImuData.acc = acc;
+            m_ImuData.mag = mag;
+            m_ImuData.quat = m_Mahony.getOrientationAsQuaternion();
+            m_ImuData.rpy = m_Mahony.getOrientationAsRPYAngles();
+            m_ImuData.tilt = m_Mahony.getTiltAngle();
         }
 
 #if IMU_DO_PRINTF
@@ -98,17 +97,18 @@ void IMUThread::run()
         float time_ms = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count() * 1.0e-3f;
         const float dtime_ms = time_ms - time_ms_past;
         time_ms_past = time_ms;
-        printf("%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, ", m_data.gyro(0), m_data.gyro(1), m_data.gyro(2),
-                                                                               m_data.acc(0) , m_data.acc(1) , m_data.acc(2) ,
-                                                                               m_data.mag(0) , m_data.mag(1) , m_data.mag(2) , time_ms );
-        printf("%.6f, %.6f, %.6f, %.6f, ", m_data.quat.w(), m_data.quat.x(), m_data.quat.y(), m_data.quat.z() );
-        printf("%.6f, %.6f, %.6f, ", m_data.rpy(0), m_data.rpy(1), m_data.rpy(2) );
-        printf("%.6f\n", m_data.tilt);
+        printf("%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, ", m_ImuData.gyro(0), m_ImuData.gyro(1), m_ImuData.gyro(2),
+               m_ImuData.acc(0), m_ImuData.acc(1), m_ImuData.acc(2),
+               m_ImuData.mag(0), m_ImuData.mag(1), m_ImuData.mag(2), time_ms);
+        printf("%.6f, %.6f, %.6f, %.6f, ", m_ImuData.quat.w(), m_ImuData.quat.x(), m_ImuData.quat.y(), m_ImuData.quat.z());
+        printf("%.6f, %.6f, %.6f, ", m_ImuData.rpy(0), m_ImuData.rpy(1), m_ImuData.rpy(2));
+        printf("%.6f\n", m_ImuData.tilt);
 #endif
     }
 }
 
 void IMUThread::sendThreadFlag()
 {
-    m_thread.flags_set(m_threadFlag);
+    // set the thread flag to trigger the thread task
+    m_Thread.flags_set(m_ThreadFlag);
 }

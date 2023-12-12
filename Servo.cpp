@@ -113,6 +113,7 @@ void Servo::sendThreadFlag()
 float Servo::constrainPulse(float pulse) const
 {
     // constrain pulse to range (PWM_MIN, PWM_MAX)
-    return (pulse > PWM_MAX) ? PWM_MAX : (pulse < PWM_MIN) ? PWM_MIN
-                                                           : pulse;
+    return (pulse > PWM_MAX) ? PWM_MAX :
+           (pulse < PWM_MIN) ? PWM_MIN :
+            pulse;
 }

@@ -1,23 +1,27 @@
 #ifndef MAHONY_H_
 #define MAHONY_H_
 
-#include <mbed.h>
-
-#include "Param.h"
+#include "eigen/Dense.h"
 
 class Mahony
 {
 public:
-    Mahony();
-    Mahony(float kp, float ki, float Ts);
+    explicit Mahony();
+    explicit Mahony(float kp, float ki, float Ts);
     virtual ~Mahony();
 
-    void Setup(float kp, float ki, float Ts);
-    void Update(Eigen::Vector3f gyro, Eigen::Vector3f acc);
-    void Update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f mag);
-    Eigen::Quaternionf GetOrientationAsQuaternion();
-    Eigen::Vector3f GetOrientationAsRPYAngles();
-    float GetTiltAngle();
+    void setup(float kp, float ki, float Ts);
+    // % bessel
+    // p = 2;         % pole at p rad/s
+    // kp = 2 * p;
+    // ki = kp^2 / 3;
+    void setGains(float kp = 2.0f * 2.0f, float ki = 16.0f / 3.0f);
+    void setSamplingTime(float Ts);
+    void update(Eigen::Vector3f gyro, Eigen::Vector3f acc);
+    void update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f mag);
+    Eigen::Quaternionf getOrientationAsQuaternion() const;
+    Eigen::Vector3f getOrientationAsRPYAngles() const;
+    float getTiltAngle() const;
 
 private:
     float m_kp = 0.0f;
