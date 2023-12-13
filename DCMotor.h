@@ -53,11 +53,18 @@ public:
      * @param pin_pwm The pin name for PWM control of the motor.
      * @param pin_enc_a The first pin name for the encoder.
      * @param pin_enc_b The second pin name for the encoder.
-     * @param counts_per_turn The number of encoder counts per turn of the motor.
+     * @param gear_ratio The gear ratio of the gear box.
      * @param kn The motor constant.
      * @param voltage_max The maximum voltage for the motor.
+     * @param counts_per_turn The number of encoder counts per turn of the motor.
      */
-    explicit DCMotor(PinName pin_pwm, PinName pin_enc_a, PinName pin_enc_b, float counts_per_turn, float kn, float voltage_max);
+    explicit DCMotor(PinName pin_pwm,
+                     PinName pin_enc_a,
+                     PinName pin_enc_b,
+                     float gear_ratio,
+                     float kn,
+                     float voltage_max = 12.0f,
+                     float counts_per_turn = 20.0f);
 
     /**
      * @brief Destroy the DCMotor object.
@@ -141,14 +148,14 @@ public:
      * @param ki The integral gain.
      * @param kd The derivative gain.
      */
-    void setVelocityCntrl(float kp = 3.5f, float ki = 3.5f / 0.02f, float kd = 0.12f);
+    void setVelocityCntrl(float kp = KP, float ki = KI, float kd = KD);
 
     /**
      * @brief Set the gain for the rotation control.
      *
      * @param p The proportional gain for the rotation control.
      */
-    void setRotationCntrlGain(float p = 20.0f);
+    void setRotationCntrlGain(float p = P);
 
     /**
      * @brief Set the maximum velocity for the motor.
@@ -170,6 +177,11 @@ private:
     static constexpr float PWM_MIN = 0.01f;
     static constexpr float PWM_MAX = 0.99f;
     static constexpr float ROTATION_ERROR_MAX = 5.0e-3f;
+    // Default controller parameters where found using a motor with gear ratio 78.125:1
+    static constexpr float KP = 3.5f;
+    static constexpr float KI = 3.5f / 0.02f;
+    static constexpr float KD = 0.12f;
+    static constexpr float P = 20.0f;
 
     FastPWM m_FastPWM;
     EncoderCounter m_EncoderCounter;

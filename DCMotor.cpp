@@ -3,18 +3,24 @@
 
 #include "DCMotor.h"
 
-DCMotor::DCMotor(PinName pin_pwm, PinName pin_enc_a, PinName pin_enc_b, float counts_per_turn, float kn, float voltage_max)
-    : m_FastPWM(pin_pwm),
-      m_EncoderCounter(pin_enc_a, pin_enc_b),
-      m_Thread(osPriorityHigh, 4096)
+DCMotor::DCMotor(PinName pin_pwm,
+                 PinName pin_enc_a,
+                 PinName pin_enc_b,
+                 float gear_ratio,
+                 float kn,
+                 float voltage_max,
+                 float counts_per_turn) : m_FastPWM(pin_pwm),
+                                          m_EncoderCounter(pin_enc_a, pin_enc_b),
+                                          m_Thread(osPriorityHigh, 4096)
 {
     // motor parameters
-    m_counts_per_turn = counts_per_turn;
+    m_counts_per_turn = gear_ratio * counts_per_turn;
     m_voltage_max = voltage_max;
-    m_velocity_max = 0.8f * kn / 60.0f * voltage_max; // only allow 80% of theoretical maximum speed
+    m_velocity_max = kn / 60.0f * voltage_max;
 
     // default controller parameters
-    setVelocityCntrl();
+    const float k_gear = gear_ratio / 78.125f;
+    setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD);
     if (kn != 0.0f)
         m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
     setRotationCntrlGain();
