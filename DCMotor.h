@@ -194,7 +194,7 @@ private:
     ThreadFlag m_ThreadFlag;
 
     enum CntrlMode {
-        Velocity,
+        Velocity = 0,
         Rotation,
     };
     CntrlMode m_cntrlMode = CntrlMode::Velocity;

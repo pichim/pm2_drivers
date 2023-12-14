@@ -1,5 +1,5 @@
-#ifndef IMU_THREAD_H_
-#define IMU_THREAD_H_
+#ifndef IMU_H_
+#define IMU_H_
 
 #include "mbed.h"
 #include "eigen/Dense.h"
@@ -57,11 +57,11 @@ public:
     };
 };
 
-class IMUThread
+class IMU
 {
 public:
-    explicit IMUThread();
-    virtual ~IMUThread();
+    explicit IMU();
+    virtual ~IMU();
 
     ImuData getImuData() const;
 
@@ -80,4 +80,4 @@ private:
     void sendThreadFlag();
 };
 
-#endif /* IMU_THREAD_H_ */
+#endif /* IMU_H_ */
