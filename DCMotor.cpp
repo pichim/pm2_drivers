@@ -20,7 +20,7 @@ DCMotor::DCMotor(PinName pin_pwm,
 
     // default controller parameters
     const float k_gear = gear_ratio / 78.125f;
-    setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD);
+    setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD * k_gear);
     if (kn != 0.0f)
         m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
     setRotationCntrlGain();

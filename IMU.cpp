@@ -1,13 +1,18 @@
 #include "IMU.h"
 
-IMU::IMU() : m_ImuLSM9DS1(IMU_PIN_SDA, IMU_PIN_SCL),
-             m_Mahony(Parameters::kp, Parameters::ki, IMU_THREAD_TS_MS * 1.0e-3f),
-             m_Thread(IMU_THREAD_PRIORITY, IMU_THREAD_SIZE)
+IMU::IMU(PinName pin_sda, PinName pin_scl) : m_ImuLSM9DS1(pin_sda, pin_scl),
+                                             m_Mahony(Parameters::kp, Parameters::ki, TS),
+                                             m_Thread(osPriorityHigh, 4096)
 {
 #if (IMU_THREAD_DO_USE_MAG_FOR_MAHONY_UPDATE && IMU_DO_USE_STATIC_MAG_CALIBRATION)
     m_magCalib.setCalibrationParameter(Parameters::A_mag, Parameters::b_mag);
 #endif
-    startThread();
+    
+    // start thread
+    m_Thread.start(callback(this, &IMU::threadTask));
+
+    // attach sendThreadFlag() to ticker so that sendThreadFlag() is called periodically, which signals the thread to execute
+    m_Ticker.attach(callback(this, &IMU::sendThreadFlag), std::chrono::microseconds{PERIOD_MUS});
 }
 
 IMU::~IMU()
@@ -21,15 +26,9 @@ ImuData IMU::getImuData() const
     return m_ImuData;
 }
 
-void IMU::startThread()
-{
-    m_Thread.start(callback(this, &IMU::threadTask));
-    m_Ticker.attach(callback(this, &IMU::sendThreadFlag), std::chrono::milliseconds{static_cast<int64_t>(IMU_THREAD_TS_MS)});
-}
-
 void IMU::threadTask()
 {
-    static const uint16_t Navg = static_cast<uint16_t>(1.0f / (IMU_THREAD_TS_MS * 1.0e-3f));
+    static const uint16_t Navg = static_cast<uint16_t>(1.0f / TS);
     static uint16_t avg_cntr = 0;
     static bool imu_is_calibrated = false;
     static Eigen::Vector3f gyro_offset;

@@ -9,11 +9,6 @@
 #include "Mahony.h"
 #include "ThreadFlag.h"
 
-#define IMU_THREAD_TS_MS 20
-#define IMU_THREAD_PRIORITY osPriorityHigh
-#define IMU_THREAD_SIZE 4096
-#define IMU_PIN_SDA PC_9
-#define IMU_PIN_SCL PA_8
 #define IMU_DO_PRINTF false
 #define IMU_DO_USE_STATIC_ACC_CALIBRATION true  // if this is false then acc gets averaged at the beginning and printed to the console
 #define IMU_DO_USE_STATIC_MAG_CALIBRATION false // if this is false then no mag calibration gets applied, e.g. A_mag = I, b_mag = 0
@@ -60,12 +55,15 @@ public:
 class IMU
 {
 public:
-    explicit IMU();
+    explicit IMU(PinName pin_sda, PinName pin_scl);
     virtual ~IMU();
 
     ImuData getImuData() const;
 
 private:
+    static constexpr int64_t PERIOD_MUS = 20000;
+    static constexpr float TS = 1.0e-6f * static_cast<float>(PERIOD_MUS);
+
     ImuData m_ImuData;
     LSM9DS1 m_ImuLSM9DS1;
     LinearCharacteristics3 m_magCalib;
@@ -75,7 +73,6 @@ private:
     Ticker m_Ticker;
     ThreadFlag m_ThreadFlag;
 
-    void startThread();
     void threadTask();
     void sendThreadFlag();
 };
