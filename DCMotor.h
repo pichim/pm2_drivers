@@ -208,7 +208,8 @@ private:
     float m_p;
 
     // signals
-    short m_counts_previous;
+    long  m_count;
+    short m_count_previous;
     float m_rotation_initial;
     float m_rotation_target;
     float m_rotation_setpoint;

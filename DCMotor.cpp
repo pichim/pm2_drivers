@@ -32,8 +32,8 @@ DCMotor::DCMotor(PinName pin_pwm,
                                 1.0f);
 
     // initialise control signals
-    m_counts_previous = m_EncoderCounter.read();
-    m_rotation_initial = static_cast<float>(m_counts_previous) / counts_per_turn;
+    m_count = m_count_previous = m_EncoderCounter.read();
+    m_rotation_initial = static_cast<float>(m_count_previous) / counts_per_turn;
     m_rotation_target = m_rotation_initial;
     m_rotation_setpoint = m_rotation_initial;
     m_rotation = m_rotation_initial;
@@ -145,14 +145,19 @@ void DCMotor::threadTask()
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
 
-        // update signals
-        const short counts = m_EncoderCounter.read();
-        float rotation_increment = static_cast<float>(counts - m_counts_previous) / m_counts_per_turn;
-        m_counts_previous = counts;
+        // update counts (avoid overflow)
+        const short count_actual = m_EncoderCounter.read();
+        const short count_delta = count_actual - m_count_previous; // avoid overflow
+        m_count_previous = count_actual;
 
-        m_rotation = m_rotation + rotation_increment;
+        // update rotation
+        m_count += count_delta;
+        m_rotation = static_cast<float>(m_count) / m_counts_per_turn;
+
+        // update velocity
+        const float rotation_increment = static_cast<float>(count_delta) / m_counts_per_turn;
         m_velocity = m_IIR_Filter_velocity.filter(rotation_increment / TS);
-
+                
         float velocity_setpoint = 0.0f;
         switch (m_cntrlMode) {
             case CntrlMode::Rotation:
