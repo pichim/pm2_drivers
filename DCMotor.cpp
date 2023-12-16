@@ -21,8 +21,9 @@ DCMotor::DCMotor(PinName pin_pwm,
     // default controller parameters
     const float k_gear = gear_ratio / 78.125f;
     setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD * k_gear);
-    if (kn != 0.0f)
-        m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
+    // if (kn != 0.0f)
+    //     m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
+    // setVelocityCntrl(DCMotor::KP * k_gear, 0.0f, 0.0f);
     setRotationCntrlGain();
 
     // iir filter
@@ -46,6 +47,20 @@ DCMotor::DCMotor(PinName pin_pwm,
     m_Motion.setPosition(0.0f);
     m_Motion.setProfileVelocity(m_velocity_max);
     setMaxAcceleration();
+
+    const float fMin = 0.8f;
+    const float fMax = 0.99f/2.0f/TS;
+    const uint16_t NfexcDes = 50;
+    const float Aexc0 =       0.8f * 2.0f * 1.0f;
+    const float Aexc1 = 0.5 * 0.8f * 2.0f * 1.0f; // Aexc0/fMax;
+    const int   NperMin = 3;
+    const float TmeasMin = 0.5f;
+    const int   NmeasMin = (int)ceilf(TmeasMin/TS);
+    const float Tstart = 1.0f;
+    const int   Nstart = (int)ceilf(Tstart/TS);
+    const float Tsweep = 0.3f;
+    const int   Nsweep = (int)ceilf(Tsweep/TS);
+    m_GPA.setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, TS, Aexc0, Aexc1, Nstart, Nsweep, true, false);
 
     // start thread
     m_Thread.start(callback(this, &DCMotor::threadTask));
@@ -114,10 +129,14 @@ float DCMotor::getPWM() const
 
 void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
 {
+    const float tau_f = 1.0f / (2.0f * M_PI * 10.0f);
+    const float tau_ro = 1.0f / (2.0f * M_PI * 0.9f / (2.0f * TS));
+    printf("%f, %f, %f, %f, %f, %f\n", kp, ki, kd, tau_f, tau_ro, TS);
     m_PID_Cntrl_velocity.setup(kp,
                                ki,
                                kd,
-                               1.0f / (2.0f * M_PI * 10.0f),
+                               tau_f,
+                               tau_ro,
                                TS,
                                m_voltage_max * (2.0f * PWM_MIN - 1.0f),
                                m_voltage_max * (2.0f * PWM_MAX - 1.0f));
@@ -142,8 +161,13 @@ void DCMotor::setMaxAcceleration(float acceleration)
 
 void DCMotor::threadTask()
 {
+    // print some gpa info
+    m_GPA.printGPAmeasPara();
+
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
+
+        static float exc = 0.0f;
 
         // update counts (avoid overflow)
         const short count_actual = m_EncoderCounter.read();
@@ -185,10 +209,11 @@ void DCMotor::threadTask()
                             (velocity_setpoint < -m_velocity_max) ? -m_velocity_max :
                              velocity_setpoint;
 
-        const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
-                                                          m_velocity,              // y_p
-                                                          rotation_increment / TS, // y_i
-                                                          m_velocity);             // y_d
+        // const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
+        //                                                   m_velocity,              // y_p
+        //                                                   rotation_increment / TS, // y_i
+        //                                                   m_velocity);             // y_d
+        const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint - m_velocity + exc);
 
         // calculate pwm and write output
         const float pwm = 0.5f + 0.5f * voltage / m_voltage_max;
@@ -198,6 +223,9 @@ void DCMotor::threadTask()
         m_velocity_setpoint = velocity_setpoint;
         m_voltage = voltage;
         m_pwm = pwm;
+
+        // gpa
+        exc = m_GPA(voltage, m_velocity);
     }
 }
 

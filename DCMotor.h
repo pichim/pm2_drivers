@@ -43,6 +43,7 @@
 #include "ThreadFlag.h"
 #include "PID_Cntrl.h"
 #include "IIR_Filter.h"
+#include "GPA.h"
 
 class DCMotor
 {
@@ -188,14 +189,15 @@ private:
     Motion m_Motion;
     PID_Cntrl m_PID_Cntrl_velocity;
     IIR_Filter m_IIR_Filter_velocity;
+    GPA m_GPA;
 
     Thread m_Thread;
     Ticker m_Ticker;
     ThreadFlag m_ThreadFlag;
 
     enum CntrlMode {
-        Velocity = 0,
-        Rotation,
+        Rotation = 0,
+        Velocity,
     };
     CntrlMode m_cntrlMode = CntrlMode::Velocity;
 

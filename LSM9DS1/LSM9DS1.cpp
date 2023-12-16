@@ -185,7 +185,7 @@ uint16_t LSM9DS1::begin()
     // each device. Store those in a variable so we can return them.
     uint8_t mTest = mReadByte(WHO_AM_I_M);      // Read the gyro WHO_AM_I
     uint8_t xgTest = xgReadByte(WHO_AM_I_XG);   // Read the accel/mag WHO_AM_I
-    printf("%x, %x, %x, %x\n\r", mTest, xgTest, _xgAddress, _mAddress);
+    // printf("%x, %x, %x, %x\n\r", mTest, xgTest, _xgAddress, _mAddress);
     uint16_t whoAmICombined = (xgTest << 8) | mTest;
     
     if (whoAmICombined != ((WHO_AM_I_AG_RSP << 8) | WHO_AM_I_M_RSP))
@@ -1026,7 +1026,6 @@ void LSM9DS1::xgWriteByte(uint8_t subAddress, uint8_t data)
     // Whether we're using I2C or SPI, write a byte using the
     // gyro-specific I2C address or SPI CS pin.
     if (settings.device.commInterface == IMU_MODE_I2C) {
-        printf("yo");
         I2CwriteByte(_xgAddress, subAddress, data);
     } else if (settings.device.commInterface == IMU_MODE_SPI) {
         SPIwriteByte(_xgAddress, subAddress, data);

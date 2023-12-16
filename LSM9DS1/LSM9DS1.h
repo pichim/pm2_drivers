@@ -30,7 +30,7 @@ Distributed as-is; no warranty is given.
 //#endif
 
 #include "mbed.h"
-#include <stdint.h>
+
 #include "LSM9DS1_Registers.h"
 #include "LSM9DS1_Types.h"
 
