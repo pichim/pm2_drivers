@@ -21,9 +21,8 @@ DCMotor::DCMotor(PinName pin_pwm,
     // default controller parameters
     const float k_gear = gear_ratio / 78.125f;
     setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD * k_gear);
-    // if (kn != 0.0f)
-    //     m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
-    // setVelocityCntrl(DCMotor::KP * k_gear, 0.0f, 0.0f);
+    if (kn != 0.0f)
+        m_PID_Cntrl_velocity.setCoeff_F(60.0f / kn);
     setRotationCntrlGain();
 
     // iir filter
@@ -48,9 +47,9 @@ DCMotor::DCMotor(PinName pin_pwm,
     m_Motion.setProfileVelocity(m_velocity_max);
     setMaxAcceleration();
 
-    const float fMin = 0.8f;
+    const float fMin = 1.0f;
     const float fMax = 0.99f/2.0f/TS;
-    const uint16_t NfexcDes = 50;
+    const uint16_t NfexcDes = 80;
     const float Aexc0 =       0.8f * 2.0f * 1.0f;
     const float Aexc1 = 0.5 * 0.8f * 2.0f * 1.0f; // Aexc0/fMax;
     const int   NperMin = 3;
@@ -129,8 +128,8 @@ float DCMotor::getPWM() const
 
 void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
 {
-    const float tau_f = 1.0f / (2.0f * M_PI * 10.0f);
-    const float tau_ro = 1.0f / (2.0f * M_PI * 0.9f / (2.0f * TS));
+    const float tau_f = 1.0f / (2.0f * M_PI * 30.0f);
+    const float tau_ro = 1.0f / (2.0f * M_PI * 0.5f / (2.0f * TS));
     printf("%f, %f, %f, %f, %f, %f\n", kp, ki, kd, tau_f, tau_ro, TS);
     m_PID_Cntrl_velocity.setup(kp,
                                ki,

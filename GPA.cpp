@@ -154,11 +154,24 @@
 //      instantiate
 // -----------------------------------------------------------------------------
 
-#include "GPA.h"
-#define   pi 3.14159265358979323846       // M_PI
+#include "math.h"
+#define M_PI 3.14159265358979323846264338327950288
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts)
+#include "GPA.h"
+
+GPA::GPA() : m_BufferedSerial(USBTX, USBRX) {
+    setUpBufferedSerial();
+}
+
+void GPA::setUpBufferedSerial()
 {
+    m_BufferedSerial.set_baud(115200);
+    m_BufferedSerial.set_blocking(false);
+}
+
+GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts) : m_BufferedSerial(USBTX, USBRX)
+{
+    setUpBufferedSerial();
     doPrint = false;
     doPrecalcParam = true;
     int NperMin = 3;
@@ -168,15 +181,17 @@ GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float T
     setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
 {
+    setUpBufferedSerial();
     doPrint = false;
     doPrecalcParam = true;
     setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
-GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
 {
+    setUpBufferedSerial();
     doPrint = false;
     doPrecalcParam = true;
     assignParameters(NfexcDes, NperMin, NmeasMin, Ts, Nstart, Nsweep);
@@ -197,8 +212,9 @@ GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int Nmea
     }
 }
 
-GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
 {
+    setUpBufferedSerial();
     doPrint = false;
     doPrecalcParam = true;
     assignParameters(NfexcDes, NperMin, NmeasMin, Ts, Nstart, Nsweep);
@@ -219,8 +235,9 @@ GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, floa
     }
 }
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam)
+GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam) : m_BufferedSerial(USBTX, USBRX)
 {
+    setUpBufferedSerial();
     setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
@@ -252,6 +269,10 @@ void GPA::setParameters(float fMin, float fMax, int NfexcDes, int NperMin, int N
 
 void GPA::reset()
 {
+    m_cntr_print = 0;
+
+    memset(&gpaData, 0, sizeof(gpaData));
+
     Nmeas = 0;
     Nper = 0;
     dfexc = 0.0;
@@ -296,11 +317,14 @@ void GPA::reset()
 
 float GPA::update(float inp, float out)
 {
+    static bool do_reset_timer{true};
+    static Timer timer;
+
     // a new frequency point has been reached
     if(j == 1) {
         // user info
         if(i == 1 && doPrint) {
-            printf("  fexc[Hz]      Ureal        Uimag        Yreal        Yimag        Rreal        Rimag\r\n");
+            printf("  fexc[Hz]      Ureal        Uimag        Yreal        Yimag        Rreal        Rimag    T avg. mus  Cntr\r\n");
         }
         // get a new unique frequency point
         while(fexc == fexcPast) {
@@ -380,11 +404,18 @@ float GPA::update(float inp, float out)
         sR[2] = sR[1];
         sR[1] = sR[0];
 #endif
+        if (do_reset_timer) {
+            do_reset_timer = false;
+            timer.start();
+            timer.reset();
+        }
     }
     // copy starting value for angle(R)
-    if(j == 1 || j == Nsweep_i + 1) sinargR = sinarg;
+    if(j == 1 || j == Nsweep_i + 1)
+        sinargR = sinarg;
     // measurement of frequencypoint is finished
     if(j == Nmeas + Nsweep_i) {
+        const uint32_t meas_time = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
         fexcPast = fexc;
         AexcPast = Aexc;
         Nsweep_i = Nsweep;
@@ -405,10 +436,23 @@ float GPA::update(float inp, float out)
         gpaData.ind++;
         // user info
         if(doPrint) {
-            printf("%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e\r\n", gpaData.fexc, gpaData.Ureal, gpaData.Uimag, gpaData.Yreal, gpaData.Yimag, gpaData.Rreal, gpaData.Rimag);
+            const float avg_time = static_cast<float>(meas_time) / static_cast<float>(Nmeas - 1);
+            // printf("%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e\r\n", gpaData.fexc, gpaData.Ureal, gpaData.Uimag, gpaData.Yreal, gpaData.Yimag, gpaData.Rreal, gpaData.Rimag);
+            int buffer_length = snprintf(m_buffer, BUFFER_LENGTH,
+                                         "%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e %10.3e %4d\r\n",
+                                         gpaData.fexc,
+                                         gpaData.Ureal, gpaData.Uimag,
+                                         gpaData.Yreal, gpaData.Yimag,
+                                         gpaData.Rreal, gpaData.Rimag,
+                                         avg_time, m_cntr_print);
+            if (m_BufferedSerial.writable()) {
+                m_cntr_print++;
+                m_BufferedSerial.write(m_buffer, buffer_length);
+            }
         }
         i += 1;
         j = 1;
+        do_reset_timer = true;
     } else {
         j += 1;
     }
@@ -443,13 +487,13 @@ void GPA::calculateDecreasingAmplitudeCoefficients(float Aexc0, float Aexc1)
 void GPA::initializeConstants(float Ts)
 {
     this->fnyq     = 1.0f/2.0f/Ts;
-    this->pi2      = 2.0*pi;
-    this->pi4      = 4.0f*(float)pi;
-    this->pi2Ts    = 2.0*pi*(double)Ts;
-    this->piDiv2   = (float)pi/2.0f;
-    this->rad2deg  = 180.0f/(float)pi;
-    this->div12pi  = 1.0f/(12.0f*(float)pi);
-    this->div812pi = 8.0f/(12.0f*(float)pi);
+    this->pi2      = 2.0*M_PI;
+    this->pi4      = 4.0f*M_PI;
+    this->pi2Ts    = 2.0*M_PI*(double)Ts;
+    this->piDiv2   = M_PI/2.0f;
+    this->rad2deg  = 180.0f/M_PI;
+    this->div12pi  = 1.0f/(12.0f*M_PI);
+    this->div812pi = 8.0f/(12.0f*M_PI);
 }
 
 void GPA::assignFilterStorage()
@@ -524,7 +568,8 @@ void GPA::precalcParam()
 float GPA::wrapAngle(float angle)
 {
     // wrap angle from (-2pi,2pi) into (-pi,pi)
-    if(abs(angle) > (float)pi) angle -= copysignf(-(float)pi2, angle); // -1*sign(angle)*2*pi + angle;
+    if(fabsf(angle) > (float)M_PI)
+        angle -= copysignf(-(float)pi2, angle); // -1*sign(angle)*2*pi + angle;
     return angle;
 }
 

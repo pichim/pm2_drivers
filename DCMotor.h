@@ -179,9 +179,9 @@ private:
     static constexpr float PWM_MAX = 0.99f;
     static constexpr float ROTATION_ERROR_MAX = 5.0e-3f;
     // Default controller parameters where found using a motor with gear ratio 78.125:1
-    static constexpr float KP = 3.5f;
+    static constexpr float KP = 1.5f * 3.5f;
     static constexpr float KI = 3.5f / 0.02f;
-    static constexpr float KD = 0.12f;
+    static constexpr float KD = 0.2f * 0.12f;
     static constexpr float P = 20.0f;
 
     FastPWM m_FastPWM;

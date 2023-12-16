@@ -2,9 +2,9 @@
 #define GPA_H_
 
 #include "mbed.h"
-#include "math.h"
 
 #define GPA_EXC_VIA_FILTER false
+#define BUFFER_LENGTH 120
 
 using namespace std;
 
@@ -25,7 +25,7 @@ public:
         int   ind;
     } gpadata_t;
 
-    GPA() {};
+    GPA();
     GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts);
     GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep);
     GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep);
@@ -52,6 +52,10 @@ public:
     gpadata_t getGPAdata();
 
 private:
+    BufferedSerial m_BufferedSerial;
+    char m_buffer[BUFFER_LENGTH];
+    void setUpBufferedSerial();
+    uint16_t m_cntr_print;
 
     int     NfexcDes;
     int     NperMin;
