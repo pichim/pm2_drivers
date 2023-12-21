@@ -16,12 +16,22 @@
 
 namespace Parameters
 {
-    // % Bessel -> D = sqrt(3)/2
-    // p = 2;    % pole at p rad/s
-    // kp = 2 * p;
-    // ki = kp^2 / 3;
-    static const float kp = 2.0f * 2.0f;
+#if IMU_THREAD_DO_USE_MAG_FOR_MAHONY_UPDATE
+    // % bessel (D = sqrt(3)/2)
+    // w0 = 3;
+    // kp = w0 / ( sqrt(3)/3 )
+    // ki = kp^2 / 3
+    static const float kp = 3.0f / (sqrtf(3.0f) / 3.0f);
     static const float ki = kp * kp / 3.0f;
+#else
+    // % real pole, no integrator, use this if you dont use the mag
+    // w0 = 3;
+    // kp = w0;
+    // ki = 0;
+    static const float kp = 3.0f;
+    static const float ki = 0.0f;
+#endif
+
     // mag_calibrated = A_mag * ( mag - b_mag )
     static const Eigen::Matrix3f A_mag = (Eigen::Matrix3f() << 1.0000000f, 0.0000000f, 0.0000000f,
                                                                0.0000000f, 1.0000000f, 0.0000000f,
