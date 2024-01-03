@@ -43,7 +43,12 @@
 #include "ThreadFlag.h"
 #include "PID_Cntrl.h"
 #include "IIR_Filter.h"
+
+#define PERFORM_GPA_MEAS false
+
+#if PERFORM_GPA_MEAS
 #include "GPA.h"
+#endif
 
 class DCMotor
 {
@@ -166,30 +171,53 @@ public:
     void setMaxVelocity(float velocity);
 
     /**
+     * @brief Get the maximum velocity for the motor.
+     *
+     * @return float The maximum velocity in rotations per second.
+     */
+    float getMaxVelocity();
+
+    /**
      * @brief Set the maximum acceleration for the motor.
      *
      * @param acceleration The maximum acceleration in rotations per second squared.
      */
     void setMaxAcceleration(float acceleration);
 
+    /**
+     * @brief Get the maximum acceleration for the motor.
+     *
+     * @return float The maximum acceleration in rotations per second squared.
+     */
+    float getMaxAcceleration();
+
+    /**
+     * @brief Enable or disable the motion planner.
+     *
+     * @param enable True to enable the motion planner, false to disable. Enabled by default.
+     */
+    void setEnableMotionPlanner(bool enable);
+
 private:
-    static constexpr int64_t PERIOD_MUS = 1000;
+    static constexpr int64_t PERIOD_MUS = 500;
     static constexpr float TS = 1.0e-6f * static_cast<float>(PERIOD_MUS);
     static constexpr float PWM_MIN = 0.01f;
     static constexpr float PWM_MAX = 0.99f;
-    static constexpr float ROTATION_ERROR_MAX = 5.0e-3f;
+    static constexpr float ROTATION_ERROR_MAX = 1.0e-3f;
     // Default controller parameters where found using a motor with gear ratio 78.125:1
-    static constexpr float KP = 0.8f * 1.5f * 3.5f;
-    static constexpr float KI = 0.8f * 3.5f / 0.02f;
-    static constexpr float KD = 0.8f * 0.2f * 0.12f;
-    static constexpr float P = 0.8f * 20.0f;
+    static constexpr float KP = 4.2f;
+    static constexpr float KI = 140.0f;
+    static constexpr float KD = 0.0192f;
+    static constexpr float P = 16.0f;
 
     FastPWM m_FastPWM;
     EncoderCounter m_EncoderCounter;
     Motion m_Motion;
     PID_Cntrl m_PID_Cntrl_velocity;
     IIR_Filter m_IIR_Filter_velocity;
+#if PERFORM_GPA_MEAS
     GPA m_GPA;
+#endif
 
     Thread m_Thread;
     Ticker m_Ticker;
@@ -201,10 +229,13 @@ private:
     };
     CntrlMode m_cntrlMode = CntrlMode::Velocity;
 
+    bool m_enable_motion_planner;
+
     // motor parameters
     float m_counts_per_turn;
     float m_voltage_max;
     float m_velocity_max;
+    float m_acceleration_max;
 
     // rotation controller parameter
     float m_p;

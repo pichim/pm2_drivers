@@ -74,7 +74,7 @@ public:
      *
      * Triggers an ultrasonic pulse and measures the distance based on the echo time.
      *
-     * @return float The distance in centimeters.
+     * @return float The positive distance in centimeters, or -1.0f if no new valid measurement is available.
      */
     float read();
 

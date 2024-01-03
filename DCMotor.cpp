@@ -18,7 +18,7 @@ DCMotor::DCMotor(PinName pin_pwm,
     m_voltage_max = voltage_max;
     m_velocity_max = kn / 60.0f * voltage_max;
 
-    // default controller parameters
+    // default controller parameters, parameters adapted from gear ratio 78:1 tune
     const float k_gear = gear_ratio / 78.125f;
     setVelocityCntrl(DCMotor::KP * k_gear, DCMotor::KI * k_gear, DCMotor::KD * k_gear);
     if (kn != 0.0f)
@@ -43,15 +43,19 @@ DCMotor::DCMotor(PinName pin_pwm,
     m_voltage = 0.0f;
     m_pwm = 0.0f;
 
+    // initilise motion planner, parameters adapted from gear ratio 78:1 tune
+    m_enable_motion_planner = true;
     m_Motion.setPosition(0.0f);
     m_Motion.setProfileVelocity(m_velocity_max);
-    setMaxAcceleration(390.625f / gear_ratio);
+    m_acceleration_max = 400.0f / gear_ratio;
+    setMaxAcceleration(m_acceleration_max);
 
+#if PERFORM_GPA_MEAS
     const float fMin = 1.0f;
     const float fMax = 0.99f/2.0f/TS;
     const uint16_t NfexcDes = 80;
-    const float Aexc0 =       0.8f * 2.0f * 1.0f;
-    const float Aexc1 = 0.5 * 0.8f * 2.0f * 1.0f; // Aexc0/fMax;
+    const float Aexc0 = 0.4f * m_velocity_max;
+    const float Aexc1 = 0.5f * 0.4f * m_velocity_max; // Aexc0/fMax;
     const int   NperMin = 3;
     const float TmeasMin = 0.5f;
     const int   NmeasMin = (int)ceilf(TmeasMin/TS);
@@ -60,6 +64,7 @@ DCMotor::DCMotor(PinName pin_pwm,
     const float Tsweep = 0.3f;
     const int   Nsweep = (int)ceilf(Tsweep/TS);
     m_GPA.setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, TS, Aexc0, Aexc1, Nstart, Nsweep, true, false);
+#endif
 
     // start thread
     m_Thread.start(callback(this, &DCMotor::threadTask));
@@ -151,21 +156,37 @@ void DCMotor::setMaxVelocity(float velocity)
     m_Motion.setProfileVelocity(velocity);
 }
 
+float DCMotor::getMaxVelocity()
+{
+    return m_velocity_max;
+}
+
 void DCMotor::setMaxAcceleration(float acceleration)
 {
     m_Motion.setProfileAcceleration(acceleration);
     m_Motion.setProfileDeceleration(acceleration);
 }
 
+float DCMotor::getMaxAcceleration()
+{
+    return m_acceleration_max;
+}
+
+void DCMotor::setEnableMotionPlanner(bool enable)
+{
+    m_enable_motion_planner = enable;
+}
+
 void DCMotor::threadTask()
 {
+#if PERFORM_GPA_MEAS
+    static float exc = 0.0f;
     // print some gpa info
-    // m_GPA.printGPAmeasPara();
+    m_GPA.printGPAmeasPara();
+#endif
 
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
-
-        static float exc = 0.0f;
 
         // update counts (avoid overflow)
         const short count_actual = m_EncoderCounter.read();
@@ -181,24 +202,37 @@ void DCMotor::threadTask()
         m_velocity = m_IIR_Filter_velocity.filter(rotation_increment / TS);
 
         float velocity_setpoint = 0.0f;
+
         switch (m_cntrlMode) {
+
             case CntrlMode::Rotation:
-                // increment motion planner to position
-                m_Motion.incrementToPosition(m_rotation_target, TS);
-                m_rotation_setpoint = m_Motion.getPosition();
-                // only set velocity_setpoint if abs of the rotation error is greater than ROTATION_ERROR_MAX
-                if (fabs(m_rotation_setpoint - m_rotation) > ROTATION_ERROR_MAX)
-                    velocity_setpoint = m_p * (m_rotation_setpoint - m_rotation);
+                if (m_enable_motion_planner) {
+                    // use motion planner
+                    m_Motion.incrementToPosition(m_rotation_target, TS);
+                    m_rotation_setpoint = m_Motion.getPosition();
+                    if ((fabs(m_rotation_setpoint - m_rotation) > ROTATION_ERROR_MAX) || (fabs(m_Motion.getVelocity()) > 0.0f))
+                        velocity_setpoint = m_p * (m_rotation_setpoint - m_rotation) + m_Motion.getVelocity();
+                } else {
+                    m_rotation_setpoint = m_rotation_target;
+                    if (fabs(m_rotation_setpoint - m_rotation) > ROTATION_ERROR_MAX)
+                        velocity_setpoint = m_p * (m_rotation_setpoint - m_rotation);
+                }
+
                 break;
 
             case CntrlMode::Velocity:
-                // increment motion planner to velocity
-                m_Motion.incrementToVelocity(m_velocity_target, TS);
-                velocity_setpoint = m_Motion.getVelocity();
-                // velocity_setpoint = m_velocity_target;
+                if (m_enable_motion_planner) {
+                    // use motion planner
+                    m_Motion.incrementToVelocity(m_velocity_target, TS);
+                    velocity_setpoint = m_Motion.getVelocity();
+                } else {
+                    velocity_setpoint = m_velocity_target;
+                }
+
                 break;
 
             default:
+
                 break; // should not happen
         }
 
@@ -207,11 +241,16 @@ void DCMotor::threadTask()
                             (velocity_setpoint < -m_velocity_max) ? -m_velocity_max :
                              velocity_setpoint;
 
+#if PERFORM_GPA_MEAS
+        const float voltage = m_PID_Cntrl_velocity.update(0.6f * m_velocity_max - m_velocity + exc);
+        // gpa
+        exc = m_GPA(voltage, m_velocity);
+#else
         const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
                                                           m_velocity,              // y_p
                                                           rotation_increment / TS, // y_i
                                                           m_velocity);             // y_d
-        // const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint - m_velocity + exc);
+#endif
 
         // calculate pwm and write output
         const float pwm = 0.5f + 0.5f * voltage / m_voltage_max;
@@ -221,9 +260,6 @@ void DCMotor::threadTask()
         m_velocity_setpoint = velocity_setpoint;
         m_voltage = voltage;
         m_pwm = pwm;
-
-        // gpa
-        // exc = m_GPA(voltage, m_velocity);
     }
 }
 
