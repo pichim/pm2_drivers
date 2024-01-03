@@ -1,11 +1,12 @@
 /**
  * @file UltrasonicSensor.h
- * @brief This file defines the UltrasonicSensor class, used for measuring distances using an ultrasonic sensor Groove Ultrasonic Ranger V2.0.
+ * @brief This file defines the UltrasonicSensor class, used for measuring distances using the Ultrasonic Ranger V2.0.
  *
  * The UltrasonicSensor class provides functionality to measure distances by emitting ultrasonic pulses 
  * and measuring the time taken for the echo to return. It encapsulates the details of interfacing with the
  * sensor hardware and offers a simple interface for obtaining distance measurements in centimeters.
- * Maximum measurment distance is approximately 2 meters (measured 198.1 cm) with a mearuement period of 12000 microseconds.
+ * Maximum measurment distance is approximately 2 meters (measured 198.1 cm) with a mearuement period of 12000
+ * microseconds. If no new valid measurement is available, the read() function returns -1.0f.
  *
  * @dependencies
  * This class relies on the following components:
