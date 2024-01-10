@@ -269,7 +269,7 @@ void GPA::setParameters(float fMin, float fMax, int NfexcDes, int NperMin, int N
 
 void GPA::reset()
 {
-    m_cntr_print = 0;
+    m_print_cntr = 0;
 
     memset(&gpaData, 0, sizeof(gpaData));
 
@@ -436,18 +436,19 @@ float GPA::update(float inp, float out)
         gpaData.ind++;
         // user info
         if(doPrint) {
-            const float avg_time = static_cast<float>(meas_time) / static_cast<float>(Nmeas - 1);
-            // printf("%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e\r\n", gpaData.fexc, gpaData.Ureal, gpaData.Uimag, gpaData.Yreal, gpaData.Yimag, gpaData.Rreal, gpaData.Rimag);
-            int buffer_length = snprintf(m_buffer, BUFFER_LENGTH,
-                                         "%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e %10.3e %4d\r\n",
-                                         gpaData.fexc,
-                                         gpaData.Ureal, gpaData.Uimag,
-                                         gpaData.Yreal, gpaData.Yimag,
-                                         gpaData.Rreal, gpaData.Rimag,
-                                         avg_time, m_cntr_print);
-            if (m_BufferedSerial.writable()) {
-                m_cntr_print++;
-                m_BufferedSerial.write(m_buffer, buffer_length);
+            const float avg_time = static_cast<float>(meas_time) / static_cast<float>(Nmeas - 1);           
+            const int buffer_length = snprintf(m_buffer, BUFFER_LENGTH,
+                                               "%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e %10.3e %4d\r\n",
+                                               gpaData.fexc,
+                                               gpaData.Ureal, gpaData.Uimag,
+                                               gpaData.Yreal, gpaData.Yimag,
+                                               gpaData.Rreal, gpaData.Rimag,
+                                               avg_time, m_print_cntr);
+            if (buffer_length >= 0 && buffer_length < BUFFER_LENGTH) {
+                if (m_BufferedSerial.writable()) {
+                    m_BufferedSerial.write(m_buffer, buffer_length);
+                    m_print_cntr++;
+                }
             }
         }
         i += 1;

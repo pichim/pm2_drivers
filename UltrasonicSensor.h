@@ -73,7 +73,7 @@ public:
     /**
      * @brief Read the measured distance in centimeters.
      *
-     * Triggers an ultrasonic pulse and measures the distance based on the echo time.
+     * Returns the measured distance in centimeters. If no new valid measurement is available, the function returns -1.0f.
      *
      * @return float The positive distance in centimeters, or -1.0f if no new valid measurement is available.
      */

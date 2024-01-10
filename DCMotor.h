@@ -203,7 +203,7 @@ private:
     static constexpr float TS = 1.0e-6f * static_cast<float>(PERIOD_MUS);
     static constexpr float PWM_MIN = 0.01f;
     static constexpr float PWM_MAX = 0.99f;
-    static constexpr float ROTATION_ERROR_MAX = 1.0e-3f;
+    static constexpr float ROTATION_ERROR_MAX = 3.0e-3f;
     // Default controller parameters where found using a motor with gear ratio 78.125:1
     static constexpr float KP = 4.2f;
     static constexpr float KI = 140.0f;

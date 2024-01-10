@@ -55,7 +55,7 @@ private:
     BufferedSerial m_BufferedSerial;
     char m_buffer[BUFFER_LENGTH];
     void setUpBufferedSerial();
-    uint16_t m_cntr_print;
+    uint16_t m_print_cntr;
 
     int     NfexcDes;
     int     NperMin;
