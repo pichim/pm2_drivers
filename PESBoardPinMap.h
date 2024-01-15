@@ -25,7 +25,7 @@
     #define PB_ENC_A_M3 PA_0
     #define PB_ENC_B_M3 PA_1
 
-    #define PN_ENABLE_DCMOTORS PB_15
+    #define PB_ENABLE_DCMOTORS PB_15
 
     // IMU
     #define PB_IMU_SDA PC_9
@@ -51,7 +51,7 @@
     #define PB_ENC_A_M3 PA_1 // ???
     #define PB_ENC_B_M3 PA_0 // ???
 
-    #define PN_ENABLE_DCMOTORS PB_2 // PB_13 ???
+    #define PB_ENABLE_DCMOTORS PB_2 // PB_13 ???
 
     #define PB_IMU_SDA // ???
     #define PB_IMU_SCL // ???
