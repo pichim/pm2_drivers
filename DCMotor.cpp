@@ -44,7 +44,7 @@ DCMotor::DCMotor(PinName pin_pwm,
     m_pwm = 0.0f;
 
     // initilise motion planner, parameters adapted from gear ratio 78:1 tune
-    m_enable_motion_planner = true;
+    m_enable_motion_planner = false;
     m_Motion.setPosition(0.0f);
     m_Motion.setProfileVelocity(m_velocity_max);
     m_acceleration_max = 400.0f / gear_ratio;
