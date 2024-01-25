@@ -1,29 +1,31 @@
 #include "LineFollower.h"
-//Constructor
+
+// Constructor
 LineFollower::LineFollower(PinName pin_1,
-                          PinName pin_2,
-                          float bar_dist,
-                          float d_wheel,
-                          float L_wheel,
-                          float max_motor_vel_rps
-                          ) : m_i2c(pin_1, pin_2),
-                              m_SensorBar(m_i2c, bar_dist),
-                              m_Thread()
+                           PinName pin_2,
+                           float bar_dist,
+                           float d_wheel,
+                           float L_wheel,
+                           float max_motor_vel_rps) : m_i2c(pin_1, pin_2),
+                                                      m_SensorBar(m_i2c, bar_dist),
+                                                      m_Thread()
 {
-    //geometric parameters
+    // geometric parameters
     m_r_wheel = d_wheel / 2.0f;
     m_L_wheel = L_wheel;
+
     // transform robot to wheel
-    m_Cwheel2robot <<  m_r_wheel / 2.0f   ,  m_r_wheel / 2.0f   ,
-                     m_r_wheel / m_L_wheel, -m_r_wheel / m_L_wheel;
+    m_Cwheel2robot << m_r_wheel / 2.0f,       m_r_wheel / 2.0f,
+                      m_r_wheel / m_L_wheel, -m_r_wheel / m_L_wheel;
 
     m_robot_coord.setZero();
     m_wheel_speed.setZero();
 
     m_max_motor_vel = max_motor_vel_rps;
     m_max_wheel_vel = max_motor_vel_rps;
-    
-    m_b = m_L_wheel / (2.0f * m_r_wheel);
+
+    if (m_r_wheel != 0.0f)
+        m_b = m_L_wheel / (2.0f * m_r_wheel);
 
     // start thread
     m_Thread.start(callback(this, &LineFollower::followLine));
@@ -32,61 +34,67 @@ LineFollower::LineFollower(PinName pin_1,
     m_Ticker.attach(callback(this, &LineFollower::sendThreadFlag), std::chrono::microseconds{PERIOD_MUS});
 }
 
-//Deconstructor
+// Deconstructor
 LineFollower::~LineFollower()
 {
     m_Ticker.detach();
     m_Thread.terminate();
 }
 
-void LineFollower::setRotationalVelGain(float Kp, float Kp_nl)
+void LineFollower::setRotationalVelocityGain(float Kp, float Kp_nl)
 {
     m_Kp = Kp;
     m_Kp_nl = Kp_nl;
 }
 
-void LineFollower::setMaxWheelVel(float new_max_wheel_vel)
+void LineFollower::setMaxWheelVelocity(float max_wheel_vel)
 {
-    if (m_max_motor_vel < new_max_wheel_vel) {
+    if (m_max_motor_vel < max_wheel_vel) {
         m_max_wheel_vel = m_max_motor_vel;
-    } else if (new_max_wheel_vel < 0.0f) {
+    } else if (max_wheel_vel < 0.0f) {
+        // TODO: this is a very small value, might it not also be just zero?
         m_max_wheel_vel = 0.001f;
     } else {
-        m_max_wheel_vel = new_max_wheel_vel;
+        m_max_wheel_vel = max_wheel_vel;
     }
 }
 
-float LineFollower::getAngRad()
+float LineFollower::getAngleRadians() const
 {
     return m_sensor_bar_avgAngleRad;
 }
 
-float LineFollower::getRotationalVelocity()
+float LineFollower::getAngleDegrees() const
+{
+    return m_sensor_bar_avgAngleRad * 180.0f / M_PI;
+}
+
+float LineFollower::getRotationalVelocity() const
 {
     return m_robot_coord(1);
 }
 
-float LineFollower::getTranslationalVelocity()
+float LineFollower::getTranslationalVelocity() const
 {
     return m_robot_coord(0);
 }
 
-float LineFollower::getRightWheelVelocity()
+float LineFollower::getRightWheelVelocity() const
 {
     return m_right_wheel_velocity;
 }
 
-float LineFollower::getLeftWheelVelocity()
+float LineFollower::getLeftWheelVelocity() const
 {
     return m_left_wheel_velocity;
 }
 
-bool LineFollower::isLedActive()
+bool LineFollower::isLedActive() const
 {
-    return isAnyLedActive; 
+    return isAnyLedActive;
 }
 
-//Thread task
+// Thread task
 void LineFollower::followLine()
 {
     while (true) {
@@ -104,39 +112,36 @@ void LineFollower::followLine()
 
         m_wheel_speed = m_Cwheel2robot.inverse() * m_robot_coord;
 
-        // Verify sides
         m_right_wheel_velocity = m_wheel_speed(0) / (2.0f * M_PI);
         m_left_wheel_velocity = m_wheel_speed(1) / (2.0f * M_PI);
-
     }
-
 }
 
-float LineFollower::ang_cntrl_fcn(const float& Kp, const float& Kp_nl, const float& angle)
+float LineFollower::ang_cntrl_fcn(float Kp, float Kp_nl, float angle)
 {
-    static float retval = 0.0f;
-    if (angle > 0) {
+    float retval = 0.0f;
+    if (angle > 0.0f) {
         retval = Kp * angle + Kp_nl * angle * angle;
-    } else if (angle <= 0) {
+    } else if (angle <= 0.0f) {
         retval = Kp * angle - Kp_nl * angle * angle;
     }
     return retval;
 }
 
-float LineFollower::vel_cntrl_v2_fcn(const float& wheel_speed_max, const float& b, const float& robot_omega, const Eigen::Matrix2f& Cwheel2robot)
+float LineFollower::vel_cntrl_v2_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot)
 {
-    static Eigen::Matrix<float, 2, 2> _wheel_speed;
-    static Eigen::Matrix<float, 2, 2> _robot_coord;
-    if (robot_omega > 0) {
-        _wheel_speed(0) = wheel_speed_max;
-        _wheel_speed(1) = wheel_speed_max - 2*b*robot_omega;
+    // TODO: Here the size was 2x2, but it should be 2x1, this might be an error i had?
+    Eigen::Matrix<float, 2, 1> wheel_speed;
+    if (robot_omega > 0.0f) {
+        wheel_speed(0) = wheel_speed_max;
+        wheel_speed(1) = wheel_speed_max - 2.0f * b * robot_omega;
     } else {
-        _wheel_speed(0) = wheel_speed_max + 2*b*robot_omega;
-        _wheel_speed(1) = wheel_speed_max;
+        wheel_speed(0) = wheel_speed_max + 2.0f * b * robot_omega;
+        wheel_speed(1) = wheel_speed_max;
     }
-    _robot_coord = Cwheel2robot * _wheel_speed;
+    Eigen::Matrix<float, 2, 1> robot_coord = Cwheel2robot * wheel_speed;
 
-    return _robot_coord(0);
+    return robot_coord(0);
 }
 
 void LineFollower::sendThreadFlag()
@@ -144,4 +149,3 @@ void LineFollower::sendThreadFlag()
     // set the thread flag to trigger the thread task
     m_Thread.flags_set(m_ThreadFlag);
 }
-

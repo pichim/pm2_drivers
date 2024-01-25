@@ -67,6 +67,13 @@ public:
     void calibratePulseMinMax(float pulse_min = 0.0f, float pulse_max = 1.0f);
 
     /**
+     * @brief Set the motion profile velocity.
+     *
+     * @param velocity The velocity value for the motion profile.
+     */
+    void setMaxVelocity(float velocity = 1.0e6f); // 1.0e6f instead of infinity
+
+    /**
      * @brief Set the motion profile acceleration.
      *
      * @param acceleration The acceleration value for the motion profile.

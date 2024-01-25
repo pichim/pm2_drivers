@@ -2,7 +2,8 @@
 
 Servo::Servo(PinName pin) : m_DigitalOut(pin), m_Thread(osPriorityAboveNormal1)
 {
-    // set default acceleration profile
+    // set default motion profile
+    setMaxVelocity();
     setMaxAcceleration();
 
     // start thread
@@ -23,11 +24,17 @@ void Servo::calibratePulseMinMax(float pulse_min, float pulse_max)
     m_pulse_max = pulse_max;
 }
 
+void Servo::setMaxVelocity(float velocity)
+{
+    // convert velocity from calibrated normalised pulse width to normalised pulse width
+    velocity *= (m_pulse_max - m_pulse_min);
+    m_Motion.setProfileVelocity(velocity);
+}
+
 void Servo::setMaxAcceleration(float acceleration)
 {
     // convert acceleration from calibrated normalised pulse width to normalised pulse width
     acceleration *= (m_pulse_max - m_pulse_min);
-    m_Motion.setProfileVelocity(1.0e6f); // 1.0e6f instead of infinity
     m_Motion.setProfileAcceleration(acceleration);
     m_Motion.setProfileDeceleration(acceleration);
 }

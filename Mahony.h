@@ -11,11 +11,7 @@ public:
     virtual ~Mahony();
 
     void setup(float kp, float ki, float Ts);
-    // % bessel
-    // p = 2;         % pole at p rad/s
-    // kp = 2 * p;
-    // ki = kp^2 / 3;
-    void setGains(float kp = 2.0f * 2.0f, float ki = 16.0f / 3.0f);
+    void setGains(float kp, float ki);
     void setSamplingTime(float Ts);
     void update(Eigen::Vector3f gyro, Eigen::Vector3f acc);
     void update(Eigen::Vector3f gyro, Eigen::Vector3f acc, Eigen::Vector3f mag);

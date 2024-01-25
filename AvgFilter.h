@@ -1,7 +1,7 @@
 #ifndef AVG_FILTER_H_
 #define AVG_FILTER_H_
 
-#include "mbed.h"
+#include <mbed.h>
 
 /**
  * Average filter class.
