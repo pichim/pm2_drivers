@@ -16,7 +16,8 @@ DCMotor::DCMotor(PinName pin_pwm,
     // motor parameters
     m_counts_per_turn = gear_ratio * counts_per_turn;
     m_voltage_max = voltage_max;
-    m_velocity_max = kn / 60.0f * voltage_max;
+    m_velocity_physical_max = kn / 60.0f * voltage_max;
+    m_velocity_max = m_velocity_physical_max;
 
     // default controller parameters, parameters adapted from gear ratio 78:1 tune
     const float k_gear = gear_ratio / 78.125f;
@@ -46,7 +47,7 @@ DCMotor::DCMotor(PinName pin_pwm,
     // initilise motion planner, parameters adapted from gear ratio 78:1 tune
     m_enable_motion_planner = false;
     m_Motion.setPosition(0.0f);
-    m_Motion.setProfileVelocity(m_velocity_max);
+    m_Motion.setProfileVelocity(m_velocity_physical_max);
     m_acceleration_max = 400.0f / gear_ratio;
     setMaxAcceleration(m_acceleration_max);
 
@@ -54,8 +55,8 @@ DCMotor::DCMotor(PinName pin_pwm,
     const float fMin = 1.0f;
     const float fMax = 0.99f/2.0f/TS;
     const uint16_t NfexcDes = 80;
-    const float Aexc0 = 0.4f * m_velocity_max;
-    const float Aexc1 = 0.5f * 0.4f * m_velocity_max; // Aexc0/fMax;
+    const float Aexc0 = 0.4f * m_velocity_physical_max;
+    const float Aexc1 = 0.5f * 0.4f * m_velocity_physical_max; // Aexc0/fMax;
     const int   NperMin = 3;
     const float TmeasMin = 0.5f;
     const int   NmeasMin = (int)ceilf(TmeasMin/TS);
@@ -152,13 +153,18 @@ void DCMotor::setRotationCntrlGain(float p)
 
 void DCMotor::setMaxVelocity(float velocity)
 {
-    velocity = (velocity > m_velocity_max) ? m_velocity_max : velocity;
-    m_Motion.setProfileVelocity(velocity);
+    m_velocity_max = (velocity > m_velocity_physical_max) ? m_velocity_physical_max : velocity;
+    m_Motion.setProfileVelocity(m_velocity_max);
 }
 
-float DCMotor::getMaxVelocity()
+float DCMotor::getMaxVelocity() const
 {
     return m_velocity_max;
+}
+
+float DCMotor::getMaxPhysicalVelocity() const
+{
+    return m_velocity_physical_max;
 }
 
 void DCMotor::setMaxAcceleration(float acceleration)
@@ -167,7 +173,7 @@ void DCMotor::setMaxAcceleration(float acceleration)
     m_Motion.setProfileDeceleration(acceleration);
 }
 
-float DCMotor::getMaxAcceleration()
+float DCMotor::getMaxAcceleration() const
 {
     return m_acceleration_max;
 }
@@ -175,6 +181,11 @@ float DCMotor::getMaxAcceleration()
 void DCMotor::setEnableMotionPlanner(bool enable)
 {
     m_enable_motion_planner = enable;
+}
+
+long DCMotor::getEncoderCount() const
+{
+    return m_count;
 }
 
 void DCMotor::threadTask()
@@ -236,13 +247,13 @@ void DCMotor::threadTask()
                 break; // should not happen
         }
 
-        // constrain velocity to (-m_velocity_max, m_velocity_max)
-        velocity_setpoint = (velocity_setpoint >  m_velocity_max) ?  m_velocity_max :
-                            (velocity_setpoint < -m_velocity_max) ? -m_velocity_max :
+        // constrain velocity to (-m_velocity_physical_max, m_velocity_physical_max)
+        velocity_setpoint = (velocity_setpoint >  m_velocity_physical_max) ?  m_velocity_physical_max :
+                            (velocity_setpoint < -m_velocity_physical_max) ? -m_velocity_physical_max :
                              velocity_setpoint;
 
 #if PERFORM_GPA_MEAS
-        const float voltage = m_PID_Cntrl_velocity.update(0.6f * m_velocity_max - m_velocity + exc);
+        const float voltage = m_PID_Cntrl_velocity.update(0.6f * m_velocity_physical_max - m_velocity + exc);
         // gpa
         exc = m_GPA(voltage, m_velocity);
 #else

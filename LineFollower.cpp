@@ -1,12 +1,12 @@
 #include "LineFollower.h"
 
 // Constructor
-LineFollower::LineFollower(PinName pin_1,
-                           PinName pin_2,
+LineFollower::LineFollower(PinName sda_pin,
+                           PinName scl_pin,
                            float bar_dist,
                            float d_wheel,
                            float L_wheel,
-                           float max_motor_vel_rps) : m_i2c(pin_1, pin_2),
+                           float max_motor_vel_rps) : m_i2c(sda_pin, scl_pin),
                                                       m_SensorBar(m_i2c, bar_dist),
                                                       m_Thread()
 {
@@ -25,7 +25,7 @@ LineFollower::LineFollower(PinName pin_1,
     m_max_wheel_vel = max_motor_vel_rps;
 
     if (m_r_wheel != 0.0f)
-        m_b = m_L_wheel / (2.0f * m_r_wheel);
+        m_rotation_to_wheel_vel = m_L_wheel / (2.0f * m_r_wheel);
 
     // start thread
     m_Thread.start(callback(this, &LineFollower::followLine));
@@ -52,8 +52,7 @@ void LineFollower::setMaxWheelVelocity(float max_wheel_vel)
     if (m_max_motor_vel < max_wheel_vel) {
         m_max_wheel_vel = m_max_motor_vel;
     } else if (max_wheel_vel < 0.0f) {
-        // TODO: this is a very small value, might it not also be just zero?
-        m_max_wheel_vel = 0.001f;
+        m_max_wheel_vel = 0.0f;
     } else {
         m_max_wheel_vel = max_wheel_vel;
     }
@@ -99,7 +98,7 @@ void LineFollower::followLine()
 {
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
-        // TODO - THINK HOW SHOULD IT BE EVALUETED
+
         if (m_SensorBar.isAnyLedActive()) {
             m_sensor_bar_avgAngleRad = m_SensorBar.getAvgAngleRad();
             isAnyLedActive = true;
@@ -108,7 +107,7 @@ void LineFollower::followLine()
         }
         m_max_wheel_vel_rads = m_max_wheel_vel * 2 * M_PI;
         m_robot_coord(1) = ang_cntrl_fcn(m_Kp, m_Kp_nl, m_sensor_bar_avgAngleRad);
-        m_robot_coord(0) = vel_cntrl_v2_fcn(m_max_wheel_vel_rads, m_b, m_robot_coord(1), m_Cwheel2robot);
+        m_robot_coord(0) = vel_cntrl_v2_fcn(m_max_wheel_vel_rads, m_rotation_to_wheel_vel, m_robot_coord(1), m_Cwheel2robot);
 
         m_wheel_speed = m_Cwheel2robot.inverse() * m_robot_coord;
 
@@ -130,7 +129,6 @@ float LineFollower::ang_cntrl_fcn(float Kp, float Kp_nl, float angle)
 
 float LineFollower::vel_cntrl_v2_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot)
 {
-    // TODO: Here the size was 2x2, but it should be 2x1, this might be an error i had?
     Eigen::Matrix<float, 2, 1> wheel_speed;
     if (robot_omega > 0.0f) {
         wheel_speed(0) = wheel_speed_max;

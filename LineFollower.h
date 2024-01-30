@@ -1,4 +1,3 @@
-
 #ifndef LINE_FOLLOWER_H_
 #define LINE_FOLLOWER_H_
 
@@ -8,38 +7,99 @@
 #include "pm2_drivers/SensorBar.h"
 #include "eigen/Dense.h"
 
-// TODO: Header file needs a proper documentation, similar to DCMotor.h, Servo.h, etc.
-//       I did ask ChatGPT for this. Eventhough everything should be calculated in radians internally,
-//       think of an interface the students might find easiest. for input and output of this module
-//       (i did not really check).
-
 class LineFollower
 {
 public:
-    explicit LineFollower(PinName pin_1,
-                          PinName pin_2,
+    /**
+     * @brief Construct a new Line Follower object.
+     *
+     * @param sda_pin I2C data line pin
+     * @param scl_pin I2C clock line pin
+     * @param bar_dist Distance between sensor bar and wheelbase.
+     * @param d_wheel Diameter of the wheel.
+     * @param L_wheel Wheelbase.
+     * @param max_motor_vel_rps Maximum motor velocity in rotations per second.
+     */
+    explicit LineFollower(PinName sda_pin,
+                          PinName scl_pin,
                           float bar_dist,
                           float d_wheel,
                           float L_wheel,
-                          float max_motor_vel);
+                          float max_motor_vel_rps);
 
+    /**
+     * @brief Destroy the Line Follower object.
+     */
     virtual ~LineFollower();
 
-    // TODO: consider setting default values for the controller gains
-    void setRotationalVelocityGain(float Kp, float Kp_nl);
+    /**
+     * @brief Set the gains for the rotational velocity controller.
+     *
+     * @param Kp Proportional gain.
+     * @param Kp_nl Non-linear proportional gain.
+     */
+    void setRotationalVelocityGain(float Kp = 2.0f, float Kp_nl = 17.0f);
+
+    /**
+     * @brief Set the maximum wheel velocity.
+     *
+     * @param max_wheel_vel Maximum wheel velocity.
+     */
     void setMaxWheelVelocity(float max_wheel_vel);
+
+    /**
+     * @brief Get the angle in radians.
+     *
+     * @return float Angle in radians.
+     */
     float getAngleRadians() const;
+
+    /**
+     * @brief Get the angle in degrees.
+     *
+     * @return float Angle in degrees.
+     */
     float getAngleDegrees() const;
+
+    /**
+     * @brief Get the rotational velocity of robot.
+     *
+     * @return float Rotational velocity.
+     */
     float getRotationalVelocity() const;
+
+    /**
+     * @brief Get the translational velocity of robot.
+     *
+     * @return float Translational velocity.
+     */
     float getTranslationalVelocity() const;
+
+    /**
+     * @brief Get the right wheel velocity in rotations per second.
+     *
+     * @return float Right wheel velocity in rotations per second.
+     */
     float getRightWheelVelocity() const;
+
+    /**
+     * @brief Get the left wheel velocity in rotations per second.
+     *
+     * @return float Left wheel velocity in rotations per second.
+     */
     float getLeftWheelVelocity() const;
+
+    /**
+     * @brief Check if the LED is active.
+     *
+     * @return true If any LED is active.
+     * @return false If no LED is active.
+     */
     bool isLedActive() const;
 
+
 private:
-    // TODO: 500 mus might be a bit too fast? can't remember what i did in the line follower project, we might
-    //       want to discuss this quickly
-    static constexpr int64_t PERIOD_MUS = 500;
+    static constexpr int64_t PERIOD_MUS = 10000;
 
     // geometric parameters
     float m_r_wheel; // wheel radius
@@ -51,8 +111,8 @@ private:
 
     // velocity controller data
     float m_max_motor_vel;
-    // TODO: What is m_b? this needs a better name
-    float m_b;
+
+    float m_rotation_to_wheel_vel;
     float m_max_wheel_vel;
     float m_max_wheel_vel_rads;
 

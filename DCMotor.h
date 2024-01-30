@@ -171,11 +171,18 @@ public:
     void setMaxVelocity(float velocity);
 
     /**
-     * @brief Get the maximum velocity for the motor.
+     * @brief Get the maximum velocity set for the motor.
      *
-     * @return float The maximum velocity in rotations per second.
+     * @return float The maximum velocity set in rotations per second.
      */
-    float getMaxVelocity();
+    float getMaxVelocity() const;
+
+    /**
+     * @brief Get the maximum physical velocity for the motor.
+     *
+     * @return float The maximum physical velocity in rotations per second.
+     */
+    float getMaxPhysicalVelocity() const;
 
     /**
      * @brief Set the maximum acceleration for the motor.
@@ -189,7 +196,7 @@ public:
      *
      * @return float The maximum acceleration in rotations per second squared.
      */
-    float getMaxAcceleration();
+    float getMaxAcceleration() const;
 
     /**
      * @brief Enable or disable the motion planner.
@@ -197,6 +204,13 @@ public:
      * @param enable True to enable the motion planner, false to disable. Enabled by default.
      */
     void setEnableMotionPlanner(bool enable);
+
+    /**
+     * @brief Get the current encoder count.
+     *
+     * @return long The current encoder count.
+     */
+    long getEncoderCount() const;
 
 private:
     static constexpr int64_t PERIOD_MUS = 500;
@@ -234,6 +248,7 @@ private:
     // motor parameters
     float m_counts_per_turn;
     float m_voltage_max;
+    float m_velocity_physical_max;
     float m_velocity_max;
     float m_acceleration_max;
 
