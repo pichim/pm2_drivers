@@ -55,8 +55,6 @@
 #define PIXY_LED_SYNC                0x14 //20
 #define PIXY_LAMP_SYNC               0x16 //22
 
-#define PRINT_FOR_DEBUG              false
-
 #define FRAMEWIDTH                   315 
 #define FRAMEHEIGHT                  207
 
@@ -233,10 +231,11 @@ public:
 private:
     static constexpr float PIXY_FREQ = 1.0f/60.0f;
     static constexpr float PERIOD_MUS = 1.0e6f * PIXY_FREQ;
-    static constexpr float TS = PIXY_FREQ;
     static constexpr float MIN_SERVO_POS = -500.0f;
     static constexpr float MAX_SERVO_POS = 500.0f;
     static constexpr uint16_t SERVO_SET_POINT = 500;
+
+    float TS{PIXY_FREQ};
 
     //Creation of buffers
     uint8_t *buffer = new uint8_t[BUFF_SIZE];
@@ -277,6 +276,7 @@ private:
 
     PID_Cntrl camPanPID;
     PID_Cntrl camTiltPID;
+    Timer camTimer;
     BufferedSerial camBufferedSerial;
     Block block;
 
@@ -285,11 +285,6 @@ private:
     Thread camThread;
     Ticker camTicker;
     void sendThreadFlag();
-
-    //Debuging tools
-#if PRINT_FOR_DEBUG
-    Timer camTimer;
-#endif
 
 };
 #endif /* PIXY_CAM_2_H */

@@ -22,6 +22,8 @@ public:
     void setup(float P, float I, float D, float tau_f, float Ts, float uMin, float uMax);
     void setup(float P, float I, float D, float tau_f, float tau_ro, float Ts, float uMin, float uMax);
 
+    void setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts);
+
     void setCoeff_P(float P);
     void setCoeff_I(float I);
     void setCoeff_D(float D);
@@ -50,8 +52,6 @@ private:
     float bi, bd, ad, bf, af;
     float P_init, I_init, D_init;
     float F{0.0f};
-
-    void setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts);
 
     void updateCoeff_I(float I, float Ts);
     void updateCoeff_D(float D, float Ts, float tau_f);

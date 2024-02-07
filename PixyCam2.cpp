@@ -144,12 +144,10 @@ void PixyCam2::setLamp(bool up, bool down) {
 
 // Main thread function to get the information from camera
 void PixyCam2::getBlocks() {
-#if PRINT_FOR_DEBUG    
     Timer timer;
     timer.start();
     timer.reset();
     int dtime_mus = 0;
-#endif
     static uint8_t msg_buffer_index;
     static bool msg_start;
     uint32_t i;
@@ -166,9 +164,7 @@ void PixyCam2::getBlocks() {
 
         camBufferedSerial.write(outBuf, OUT_BUFF_SIZE);
         msg_start = false;
-#if PRINT_FOR_DEBUG
-        //dtime_mus = 0;
-#endif  
+        dtime_mus = 0;
         if (camBufferedSerial.readable()) {
             uint32_t msg_len = camBufferedSerial.read(buffer, BUFF_SIZE);
             for (i = 0; i < msg_len; i++) {
@@ -179,11 +175,8 @@ void PixyCam2::getBlocks() {
                         sum = checksum_check(2);
                         if (sum == checksum) {
                             msg_read(0);
-#if PRINT_FOR_DEBUG
-                            dtime_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
+                            TS = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count() * 1.0e-6f;
                             timer.reset();
-                            printf("%d, %d, %d, %d \n", dtime_mus, block.signature, block.x, block.y); 
-#endif
                             if(isFollowerEnabled == true) {
                                 follow(getX(), getY());
                             }
@@ -241,9 +234,12 @@ void PixyCam2::sendThreadFlag()
 
 // Object follower
 void PixyCam2::follow(uint16_t x, uint16_t y) {
+    camPanPID.setCoefficients(p_KP, p_KI, p_KD, 0.0f, 0.0f, TS);
+    camTiltPID.setCoefficients(t_KP, t_KI, t_KD, 0.0f, 0.0f, TS);
     panOffset = (uint16_t)(FRAMEWIDTH/2) - x;
     tiltOffset = y - (uint16_t)(FRAMEHEIGHT/2);
     panUpdate = SERVO_SET_POINT + (int16_t)camPanPID.update(panOffset);
     tiltUpdate = SERVO_SET_POINT + (int16_t)camTiltPID.update(tiltOffset);
+    printf("%f, %d, %d \n", TS, panUpdate, tiltUpdate);
     setServos(panUpdate, tiltUpdate);
 }
