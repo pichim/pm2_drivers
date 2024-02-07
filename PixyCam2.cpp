@@ -167,12 +167,11 @@ void PixyCam2::getBlocks() {
         camBufferedSerial.write(outBuf, OUT_BUFF_SIZE);
         msg_start = false;
 #if PRINT_FOR_DEBUG
-        dtime_mus = 0;
+        //dtime_mus = 0;
 #endif  
         if (camBufferedSerial.readable()) {
             uint32_t msg_len = camBufferedSerial.read(buffer, BUFF_SIZE);
             for (i = 0; i < msg_len; i++) {
-                printf("%02x", buffer[i]);
                 if (msg_start == true) {
                     msg_buffer[msg_buffer_index++] = buffer[i];
                     if (msg_buffer_index == 16) {
@@ -183,7 +182,7 @@ void PixyCam2::getBlocks() {
 #if PRINT_FOR_DEBUG
                             dtime_mus = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
                             timer.reset();
-                            printf("    %d, %d, %d, %d \n", dtime_mus, block.signature, block.x, block.y); 
+                            printf("%d, %d, %d, %d \n", dtime_mus, block.signature, block.x, block.y); 
 #endif
                             if(isFollowerEnabled == true) {
                                 follow(getX(), getY());

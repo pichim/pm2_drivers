@@ -55,7 +55,7 @@
 #define PIXY_LED_SYNC                0x14 //20
 #define PIXY_LAMP_SYNC               0x16 //22
 
-#define PRINT_FOR_DEBUG              true
+#define PRINT_FOR_DEBUG              false
 
 #define FRAMEWIDTH                   315 
 #define FRAMEHEIGHT                  207
@@ -250,13 +250,13 @@ private:
     static bool msg_start;
 
     // Pan follower cntrl
-    static constexpr float p_KP = 0.75f;
-    static constexpr float p_KI = 0.23f / TS;
+    static constexpr float p_KP = 0.74f;
+    static constexpr float p_KI = 13.8f;
     static constexpr float p_KD = 0.0f;
 
     // Tilt follower cntrl
-    static constexpr float t_KP = 0.98f;
-    static constexpr float t_KI = 0.34f / TS;
+    static constexpr float t_KP = 0.73f;
+    static constexpr float t_KI = 19.8;
     static constexpr float t_KD = 0.0f;
 
     // Pan/Tilt offsets
