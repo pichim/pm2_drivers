@@ -44,7 +44,7 @@ class ImuData
 {
 public:
     ImuData() {
-        initialise();
+        init();
     };
     virtual ~ImuData(){};
 
@@ -53,7 +53,7 @@ public:
     Eigen::Vector3f rpy;
     float tilt = 0.0f;
 
-    void initialise() {
+    void init() {
         gyro.setZero();
         acc.setZero();
         mag.setZero();

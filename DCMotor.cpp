@@ -11,7 +11,10 @@ DCMotor::DCMotor(PinName pin_pwm,
                  float voltage_max,
                  float counts_per_turn) : m_FastPWM(pin_pwm),
                                           m_EncoderCounter(pin_enc_a, pin_enc_b),
-                                          m_Thread(osPriorityHigh, 4096)
+                                          m_Thread(osPriorityHigh1, 4096)
+#if PERFORM_CHIRP_MEAS
+                                          , m_BufferedSerial(USBTX, USBRX)
+#endif
 {
     // motor parameters
     m_counts_per_turn = gear_ratio * counts_per_turn;
@@ -47,16 +50,17 @@ DCMotor::DCMotor(PinName pin_pwm,
     // initilise motion planner, parameters adapted from gear ratio 78:1 tune
     m_enable_motion_planner = false;
     m_Motion.setPosition(0.0f);
-    m_Motion.setProfileVelocity(m_velocity_physical_max);
+    m_Motion.setProfileVelocity(m_velocity_max);
     m_acceleration_max = 400.0f / gear_ratio;
     setMaxAcceleration(m_acceleration_max);
 
 #if PERFORM_GPA_MEAS
+    // closed-loop measurement
     const float fMin = 1.0f;
     const float fMax = 0.99f/2.0f/TS;
     const uint16_t NfexcDes = 80;
-    const float Aexc0 = 0.4f * m_velocity_physical_max;
-    const float Aexc1 = 0.5f * 0.4f * m_velocity_physical_max; // Aexc0/fMax;
+    const float Aexc0 = 0.4f * m_velocity_max;
+    const float Aexc1 = 0.5f * 0.4f * m_velocity_max; // Aexc0/fMax;
     const int   NperMin = 3;
     const float TmeasMin = 0.5f;
     const int   NmeasMin = (int)ceilf(TmeasMin/TS);
@@ -64,7 +68,17 @@ DCMotor::DCMotor(PinName pin_pwm,
     const int   Nstart = (int)ceilf(Tstart/TS);
     const float Tsweep = 0.3f;
     const int   Nsweep = (int)ceilf(Tsweep/TS);
-    m_GPA.setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, TS, Aexc0, Aexc1, Nstart, Nsweep, true, false);
+    m_GPA.init(fMin, fMax, NfexcDes, NperMin, NmeasMin, TS, Aexc0, Aexc1, Nstart, Nsweep, true, true);
+#endif
+
+#if PERFORM_CHIRP_MEAS
+    const float f0 = 0.1f;
+    const float f1 = 0.99f/2.0f/TS;
+    const float t1 = 60.0f;
+    m_chirp.init(f0, f1, t1, TS);
+    m_BufferedSerial.set_baud(2000000);
+    m_BufferedSerial.set_blocking(false);
+    m_timer.start();
 #endif
 
     // start thread
@@ -144,6 +158,10 @@ void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
                                TS,
                                m_voltage_max * (2.0f * PWM_MIN - 1.0f),
                                m_voltage_max * (2.0f * PWM_MAX - 1.0f));
+    // avoid students melting their motors
+    const float gain = 0.3f;
+    m_PID_Cntrl_velocity.setIntegratorLimits(gain * m_voltage_max * (2.0f * PWM_MIN - 1.0f),
+                                             gain * m_voltage_max * (2.0f * PWM_MAX - 1.0f));
 }
 
 void DCMotor::setRotationCntrlGain(float p)
@@ -188,10 +206,28 @@ long DCMotor::getEncoderCount() const
     return m_count;
 }
 
+#if PERFORM_GPA_MEAS
+void DCMotor::startGPA()
+{
+    if (!m_start_gpa) {
+        m_start_gpa = true;
+    }
+}
+#endif
+
+#if PERFORM_CHIRP_MEAS
+void DCMotor::startChrip()
+{
+    if (!m_start_chirp) {
+        m_start_chirp = true;
+        m_timer.reset();
+    }
+}
+#endif
+
 void DCMotor::threadTask()
 {
 #if PERFORM_GPA_MEAS
-    static float exc = 0.0f;
     // print some gpa info
     m_GPA.printGPAmeasPara();
 #endif
@@ -247,15 +283,38 @@ void DCMotor::threadTask()
                 break; // should not happen
         }
 
-        // constrain velocity to (-m_velocity_physical_max, m_velocity_physical_max)
-        velocity_setpoint = (velocity_setpoint >  m_velocity_physical_max) ?  m_velocity_physical_max :
-                            (velocity_setpoint < -m_velocity_physical_max) ? -m_velocity_physical_max :
+        // constrain velocity to (-m_velocity_max, m_velocity_max)
+        velocity_setpoint = (velocity_setpoint >  m_velocity_max) ?  m_velocity_max :
+                            (velocity_setpoint < -m_velocity_max) ? -m_velocity_max :
                              velocity_setpoint;
 
 #if PERFORM_GPA_MEAS
-        const float voltage = m_PID_Cntrl_velocity.update(0.6f * m_velocity_physical_max - m_velocity + exc);
-        // gpa
-        exc = m_GPA(voltage, m_velocity);
+        static float exc = 0.0f;
+        // closed-loop measurement
+        const float voltage = m_PID_Cntrl_velocity.update(0.6f * m_velocity_max - m_velocity + exc);
+        if (m_start_gpa) {
+            exc = m_GPA.update(voltage, m_velocity);
+        }
+#elif PERFORM_CHIRP_MEAS
+        const float magnitude = 4.0f;
+        const float offset = 5.0f;
+        float voltage = offset;
+        if (m_start_chirp && m_chirp.update()) {
+            const float time_ms = static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>(m_timer.elapsed_time()).count()) * 1.0e-3f;
+            m_timer.reset();
+            const float exc = m_chirp.getExc();
+            const float fchirp = m_chirp.getFreq();
+            const float sinarg = m_chirp.getSinarg();
+            voltage = magnitude * exc + offset;
+            if (m_BufferedSerial.writable()) {
+                memcpy(&m_buffer[0 ], &time_ms, 4);
+                memcpy(&m_buffer[4 ], &voltage, 4);
+                memcpy(&m_buffer[8 ], &fchirp, 4);
+                memcpy(&m_buffer[12], &sinarg, 4);
+                memcpy(&m_buffer[16], &m_rotation, 4);
+                m_BufferedSerial.write(m_buffer, 20);
+            }
+        }
 #else
         const float voltage = m_PID_Cntrl_velocity.update(velocity_setpoint,       // w
                                                           m_velocity,              // y_p

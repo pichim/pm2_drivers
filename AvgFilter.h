@@ -17,6 +17,7 @@ public:
     void reset(float val);
     void reset();
     float apply(float inp);
+    float getVal() const { return m_val; }
 
 private:
     float m_val;

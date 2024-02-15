@@ -44,10 +44,18 @@
 #include "PID_Cntrl.h"
 #include "IIR_Filter.h"
 
+// IMPORTANT: only use GPA or Chirp, not both at the same time
 #define PERFORM_GPA_MEAS false
+#define PERFORM_CHIRP_MEAS false
 
 #if PERFORM_GPA_MEAS
 #include "GPA.h"
+#endif
+
+#if PERFORM_CHIRP_MEAS
+#include "mbed.h"
+#include "Chirp.h"
+#define BUFFER_LENGTH 20 // 5 float values
 #endif
 
 class DCMotor
@@ -203,7 +211,7 @@ public:
      *
      * @param enable True to enable the motion planner, false to disable. Enabled by default.
      */
-    void setEnableMotionPlanner(bool enable);
+    void setEnableMotionPlanner(bool enable = true);
 
     /**
      * @brief Get the current encoder count.
@@ -212,12 +220,20 @@ public:
      */
     long getEncoderCount() const;
 
+#if PERFORM_GPA_MEAS
+    void startGPA();
+#endif
+
+#if PERFORM_CHIRP_MEAS
+    void startChrip();
+#endif
+
 private:
     static constexpr int64_t PERIOD_MUS = 500;
     static constexpr float TS = 1.0e-6f * static_cast<float>(PERIOD_MUS);
     static constexpr float PWM_MIN = 0.01f;
     static constexpr float PWM_MAX = 0.99f;
-    static constexpr float ROTATION_ERROR_MAX = 3.0e-3f;
+    static constexpr float ROTATION_ERROR_MAX = 5.0e-3f;
     // Default controller parameters where found using a motor with gear ratio 78.125:1
     static constexpr float KP = 4.2f;
     static constexpr float KI = 140.0f;
@@ -231,6 +247,14 @@ private:
     IIR_Filter m_IIR_Filter_velocity;
 #if PERFORM_GPA_MEAS
     GPA m_GPA;
+    bool m_start_gpa = false;
+#endif
+#if PERFORM_CHIRP_MEAS
+    Chirp m_chirp;
+    BufferedSerial m_BufferedSerial;
+    Timer m_timer;
+    char m_buffer[BUFFER_LENGTH];
+    bool m_start_chirp = false;
 #endif
 
     Thread m_Thread;

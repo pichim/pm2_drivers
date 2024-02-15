@@ -12,7 +12,7 @@ class GPA
 {
 public:
 
-    typedef struct GPADATA {
+    typedef struct gpadata_s {
         float fexc;
         float Ureal;
         float Uimag;
@@ -39,7 +39,7 @@ public:
 
     virtual ~GPA();
 
-    void    setParameters(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam);
+    void    init(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam);
     void    reset();
     float   update(float inp, float out);
 

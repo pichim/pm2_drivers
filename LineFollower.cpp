@@ -8,7 +8,7 @@ LineFollower::LineFollower(PinName sda_pin,
                            float L_wheel,
                            float max_motor_vel_rps) : m_i2c(sda_pin, scl_pin),
                                                       m_SensorBar(m_i2c, bar_dist),
-                                                      m_Thread()
+                                                      m_Thread(osPriorityAboveNormal2)
 {
     // geometric parameters
     m_r_wheel = d_wheel / 2.0f;

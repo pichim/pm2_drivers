@@ -165,7 +165,7 @@ GPA::GPA() : m_BufferedSerial(USBTX, USBRX) {
 
 void GPA::setUpBufferedSerial()
 {
-    m_BufferedSerial.set_baud(115200);
+    m_BufferedSerial.set_baud(2000000);
     m_BufferedSerial.set_blocking(false);
 }
 
@@ -178,7 +178,7 @@ GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float T
     int NmeasMin = (int)ceil(1.0f/Ts);
     int Nstart = (int)ceil(3.0f/Ts);
     int Nsweep = (int)ceil(0.0f/Ts);
-    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
+    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
 GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
@@ -186,7 +186,7 @@ GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float 
     setUpBufferedSerial();
     doPrint = false;
     doPrecalcParam = true;
-    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
+    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
 GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
@@ -238,7 +238,7 @@ GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, floa
 GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam) : m_BufferedSerial(USBTX, USBRX)
 {
     setUpBufferedSerial();
-    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
+    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
 }
 
 // -----------------------------------------------------------------------------
@@ -247,7 +247,7 @@ GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float 
 
 GPA::~GPA() {}
 
-void GPA::setParameters(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam)
+void GPA::init(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam)
 {
     this->doPrint = doPrint;
     this->doPrecalcParam = doPrecalcParam;
@@ -324,7 +324,7 @@ float GPA::update(float inp, float out)
     if(j == 1) {
         // user info
         if(i == 1 && doPrint) {
-            printf("  fexc[Hz]      Ureal        Uimag        Yreal        Yimag        Rreal        Rimag    T avg. mus  Cntr\r\n");
+            printf("   fexc[Hz]       Ureal         Uimag         Yreal         Yimag         Rreal         Rimag     T avg. mus   Cntr\n");
         }
         // get a new unique frequency point
         while(fexc == fexcPast) {
@@ -438,7 +438,7 @@ float GPA::update(float inp, float out)
         if(doPrint) {
             const float avg_time = static_cast<float>(meas_time) / static_cast<float>(Nmeas - 1);           
             const int buffer_length = snprintf(m_buffer, BUFFER_LENGTH,
-                                               "%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e %10.3e %4d\r\n",
+                                               "%12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %11.4e %4d\r\n",
                                                gpaData.fexc,
                                                gpaData.Ureal, gpaData.Uimag,
                                                gpaData.Yreal, gpaData.Yimag,
@@ -581,13 +581,13 @@ float GPA::wrapAngle(float angle)
 void GPA::printGPAfexcDes()
 {
     for(int i = 0; i < NfexcDes; i++) {
-        printf("%9.4f\r\n", fexcDes[i]);
+        printf("%9.4f\n", fexcDes[i]);
     }
 }
 
 void GPA::printGPAmeasPara()
 {
-    printf(" fexcDes[Hz]   fexc[Hz]     Aexc      Nmeas   Nper  Nsweep_i\r\n");
+    printf(" fexcDes[Hz]   fexc[Hz]     Aexc      Nmeas   Nper  Nsweep_i\n");
     wait_us(10000);
     for(int i = 0; i < NfexcDes; i++) {
         calcGPAmeasPara(fexcDes[i]);
@@ -604,7 +604,7 @@ void GPA::printGPAmeasPara()
         }
         NmeasTotal += Nmeas;
         NmeasTotal += Nsweep_i;
-        printf("%11.4e %12.4e %10.3e %7i %6i %7i\r\n", fexcDes[i], (float)fexc, Aexc, Nmeas, Nper, Nsweep_i);
+        printf("%11.4e %12.4e %10.3e %7i %6i %7i\n", fexcDes[i], (float)fexc, Aexc, Nmeas, Nper, Nsweep_i);
         // wait_us(100 * 1000);
         Nsweep_i = Nsweep;
     }
@@ -614,19 +614,19 @@ void GPA::printGPAmeasPara()
 
 void GPA::printGPAmeasTime()
 {
-    printf(" Number of data points :  %11i\r\n", NmeasTotal);
-    printf(" Measurment time in sec: %12.2f\r\n", (float)NmeasTotal*Ts);
+    printf(" Number of data points :  %11i\n", NmeasTotal);
+    printf(" Measurment time in sec: %12.2f\n", (float)NmeasTotal*Ts);
 }
 
 void GPA::printNfexcDes()
 {
-    printf(" Number of frequancy points:   %3i\r\n", NfexcDes);
+    printf(" Number of frequancy points:   %3i\n", NfexcDes);
 }
 
 void GPA::printPrecalcParam()
 {
-    printf(" Number of actual frequancy points:   %3i\r\n", NfexcAct);
-    for(int i = 0; i < NfexcAct; i++) printf(" %6i %6i %9.3e %9.3e\r\n", Nper_vec[i], Nmeas_vec[i], fexc_vec[i], Aexc_vec[i]);
+    printf(" Number of actual frequancy points:   %3i\n", NfexcAct);
+    for(int i = 0; i < NfexcAct; i++) printf(" %6i %6i %9.3e %9.3e\n", Nper_vec[i], Nmeas_vec[i], fexc_vec[i], Aexc_vec[i]);
 }
 
 GPA::gpadata_t GPA::getGPAdata()

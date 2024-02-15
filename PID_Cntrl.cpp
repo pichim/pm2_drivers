@@ -83,8 +83,7 @@ void PID_Cntrl::setup(float P, float I, float D, float tau_f, float Ts, float uM
 void PID_Cntrl::setup(float P, float I, float D, float tau_f, float tau_ro, float Ts, float uMin, float uMax)
 {
     setCoefficients(P, I, D, tau_f, tau_ro, Ts);
-    this->uMin = uMin;
-    this->uMax = uMax;
+    setLimits(uMin, uMax);
     reset();
 }
 
@@ -122,7 +121,7 @@ void PID_Cntrl::scale_PIDT2_param(float scale)
 float PID_Cntrl::update(float e)
 {
     if (bi != 0)
-        IPart = saturate(IPart + bi * e, uMin, uMax);
+        IPart = saturate(IPart + bi * e, uIMin, uIMax);
     else
         IPart = 0.0f;
     Dpart = bd * (e - d_old) - ad * Dpart;
@@ -136,7 +135,7 @@ float PID_Cntrl::update(float e)
 float PID_Cntrl::update(float e, float y)
 {
     if (bi != 0)
-        IPart = saturate(IPart + bi * e, uMin, uMax);
+        IPart = saturate(IPart + bi * e, uIMin, uIMax);
     else
         IPart = 0.0;
     Dpart = bd * (y - d_old) - ad * Dpart;
@@ -150,7 +149,7 @@ float PID_Cntrl::update(float e, float y)
 float PID_Cntrl::update(float w, float y_p, float y_i, float y_d)
 {
     if (bi != 0)
-        IPart = saturate(IPart + bi * (w - y_i), uMin, uMax);
+        IPart = saturate(IPart + bi * (w - y_i), uIMin, uIMax);
     else
         IPart = 0.0;
     Dpart = bd * (y_d - d_old) - ad * Dpart;
@@ -161,10 +160,18 @@ float PID_Cntrl::update(float w, float y_p, float y_i, float y_d)
     return uf;
 }
 
-void PID_Cntrl::set_limits(float uMin, float uMax)
+void PID_Cntrl::setLimits(float uMin, float uMax)
 {
     this->uMin = uMin;
     this->uMax = uMax;
+    this->uIMin = uMin;
+    this->uIMax = uMax;
+}
+
+void PID_Cntrl::setIntegratorLimits(float uIMin, float uIMax)
+{
+    this->uIMin = uIMin;
+    this->uIMax = uIMax;
 }
 
 float PID_Cntrl::prewarp(float T, float Ts)

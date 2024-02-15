@@ -45,7 +45,7 @@ IIR_Filter::IIR_Filter(float k, float Tz, float Tp, float Ts, int typ)
 IIR_Filter::IIR_Filter(float *b, float *a, int nb, int na, float yMin, float yMax)
 {
     setup(b, a, nb, na);
-    set_limits(yMin, yMax);
+    setLimits(yMin, yMax);
 }
 
 IIR_Filter::IIR_Filter(float *b, float *a, int nb, int na)
@@ -81,7 +81,7 @@ void IIR_Filter::setup(float T, float Ts)
     this->K = 0.0f;
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 
 // G(s) = K/(T*s + 1)
@@ -111,7 +111,7 @@ void IIR_Filter::setup(float T, float Ts, float K)
     this->K = K;
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 
 // G(s) = K*w0^2/(s^2 + 2*D*w0*s + w0^2)
@@ -147,7 +147,7 @@ void IIR_Filter::setup(float w0, float D, float Ts, float K)
     this->K = K;
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 // G(s) = K*w0^2/(s^2 + 2*D*w0*s + w0^2)
 void IIR_Filter::setup(float k, float Tz, float Tp, float Ts, int typ)
@@ -180,7 +180,7 @@ void IIR_Filter::setup(float k, float Tz, float Tp, float Ts, int typ)
     this->K = k;
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 
 // G(s) = K * wp^2/wz^2 * (s^2 + 2*Dz*wz*s + wz^2)/(s^2 + 2*Dp*wp*s + wp^2)
@@ -215,7 +215,7 @@ void IIR_Filter::setup(float wz, float Dz, float wp, float Dp, float Ts, float K
     this->K = K;
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 
 /*
@@ -239,7 +239,7 @@ void IIR_Filter::setup(float wz, float Dz, float wp, float Dp, float Ts, float K
 void IIR_Filter::setup(float *b, float *a, int nb, int na, float yMin, float yMax)
 {
     setup(b, a, nb, na);
-    set_limits(yMin, yMax);
+    setLimits(yMin, yMax);
 }
 
 void IIR_Filter::setup(float *b, float *a, int nb, int na)
@@ -280,7 +280,7 @@ void IIR_Filter::setup(float *b, float *a, int nb, int na)
     }
 
     /* min. and max. filter output */
-    set_limits(999999.0f);
+    setLimits();
 }
 
 void IIR_Filter::reset()
@@ -301,12 +301,12 @@ void IIR_Filter::reset(float u, float y)
         yk[k] = y;
 }
 
-void IIR_Filter::set_limits(float yMax)
+void IIR_Filter::setLimits(float yMax)
 {
-    set_limits(-yMax, yMax);
+    setLimits(-yMax, yMax);
 }
 
-void IIR_Filter::set_limits(float yMin, float yMax)
+void IIR_Filter::setLimits(float yMin, float yMax)
 {
     this->yMin = yMin;
     this->yMax = yMax;

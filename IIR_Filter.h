@@ -28,8 +28,8 @@ public:
     void reset(float u);
     void reset(float u, float y);
 
-    void set_limits(float yMax);
-    void set_limits(float yMin, float yMax);
+    void setLimits(float yMax = 1.0e6f);
+    void setLimits(float yMin, float yMax);
 
     float filter(float u);
 

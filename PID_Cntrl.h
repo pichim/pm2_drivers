@@ -33,7 +33,8 @@ public:
     float update(float e, float y);
     float update(float w, float y_p, float y_i, float y_d);
 
-    void set_limits(float uMin, float uMax);
+    void setLimits(float uMin, float uMax);
+    void setIntegratorLimits(float uIMin, float uIMax);
 
     float prewarp(float T, float Ts);
 
@@ -45,7 +46,7 @@ public:
 
 private:
     float IPart, Dpart, d_old, u_old, uf;
-    float P, I, D, tau_f, tau_ro, Ts, uMin, uMax;
+    float P, I, D, tau_f, tau_ro, Ts, uMin, uMax, uIMin, uIMax;
     float bi, bd, ad, bf, af;
     float P_init, I_init, D_init;
     float F{0.0f};
