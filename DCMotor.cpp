@@ -196,7 +196,7 @@ float DCMotor::getMaxAcceleration() const
     return m_acceleration_max;
 }
 
-void DCMotor::setEnableMotionPlanner(bool enable)
+void DCMotor::enableMotionPlanner(bool enable)
 {
     m_enable_motion_planner = enable;
 }

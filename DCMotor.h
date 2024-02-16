@@ -207,11 +207,11 @@ public:
     float getMaxAcceleration() const;
 
     /**
-     * @brief Enable or disable the motion planner.
+     * @brief Enable or disable the motion planner. Module is disabled by default.
      *
-     * @param enable True to enable the motion planner, false to disable. Enabled by default.
+     * @param enable True to enable the motion planner, false to disable.
      */
-    void setEnableMotionPlanner(bool enable = true);
+    void enableMotionPlanner(bool enable = true);
 
     /**
      * @brief Get the current encoder count.

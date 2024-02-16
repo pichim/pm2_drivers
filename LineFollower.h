@@ -138,7 +138,7 @@ private:
 
     // velocity controller functions
     float ang_cntrl_fcn(float Kp, float Kp_nl, float sensor_bar_avgAngleRad);
-    float vel_cntrl_v2_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot);
+    float vel_cntrl_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot);
 
     // thread functions
     void followLine();

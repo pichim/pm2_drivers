@@ -107,7 +107,7 @@ void LineFollower::followLine()
         }
         m_max_wheel_vel_rads = m_max_wheel_vel * 2 * M_PI;
         m_robot_coord(1) = ang_cntrl_fcn(m_Kp, m_Kp_nl, m_sensor_bar_avgAngleRad);
-        m_robot_coord(0) = vel_cntrl_v2_fcn(m_max_wheel_vel_rads, m_rotation_to_wheel_vel, m_robot_coord(1), m_Cwheel2robot);
+        m_robot_coord(0) = vel_cntrl_fcn(m_max_wheel_vel_rads, m_rotation_to_wheel_vel, m_robot_coord(1), m_Cwheel2robot);
 
         m_wheel_speed = m_Cwheel2robot.inverse() * m_robot_coord;
 
@@ -118,16 +118,16 @@ void LineFollower::followLine()
 
 float LineFollower::ang_cntrl_fcn(float Kp, float Kp_nl, float angle)
 {
-    float retval = 0.0f;
+    float ang_vel = 0.0f;
     if (angle > 0.0f) {
-        retval = Kp * angle + Kp_nl * angle * angle;
+        ang_vel = Kp * angle + Kp_nl * angle * angle;
     } else if (angle <= 0.0f) {
-        retval = Kp * angle - Kp_nl * angle * angle;
+        ang_vel = Kp * angle - Kp_nl * angle * angle;
     }
-    return retval;
+    return ang_vel;
 }
 
-float LineFollower::vel_cntrl_v2_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot)
+float LineFollower::vel_cntrl_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot)
 {
     Eigen::Matrix<float, 2, 1> wheel_speed;
     if (robot_omega > 0.0f) {
