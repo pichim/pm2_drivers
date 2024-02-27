@@ -70,9 +70,9 @@ void UltrasonicSensor::threadTask()
         // 4. measureTimeAndUpdateDistance()
 
         // detach interrupt
-        m_InteruptIn.fall(NULL);
-        m_InteruptIn.rise(NULL);
         m_InteruptIn.disable_irq();
+        m_InteruptIn.rise(NULL);
+        m_InteruptIn.fall(NULL);
 
         // change the pin to output mode and set the digital output to high
         // this will generate a pulse of length m_pulsetime and trigger the ultrasonic sensor

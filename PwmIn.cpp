@@ -14,32 +14,43 @@ PwmIn::~PwmIn()
 {
 }
 
-float PwmIn::getPeriod()
+uint32_t PwmIn::getPeriod()
 {
     return _period;
 }
 
-float PwmIn::getPulsewidth()
+uint32_t PwmIn::getPulsewidth()
 {
     return _pulsewidth;
 }
 
 float PwmIn::getDutyCycle()
 {
-    if (_period != 0.0f)
-        return _pulsewidth / _period;
+    const float period = static_cast<float>(_period);
+    if (period != 0.0f)
+        return static_cast<float>(_pulsewidth) / period;
     else
         return 0.0f;
 }
 
 void PwmIn::measurePeriodAndResetTimer()
 {
-    const int64_t time_actual_us = duration_cast<microseconds>(_timer.elapsed_time()).count();
-    _period = static_cast<float>(time_actual_us - _time_previous_us);
+    const uint32_t time_actual_us = duration_cast<microseconds>(_timer.elapsed_time()).count();
+    _period = time_actual_us - _time_previous_us;
     _time_previous_us = time_actual_us;
 }
 
 void PwmIn::measurePulseWidth()
 {
-    _pulsewidth = static_cast<float>(duration_cast<microseconds>(_timer.elapsed_time()).count() - _time_previous_us);
+    _pulsewidth = duration_cast<microseconds>(_timer.elapsed_time()).count() - _time_previous_us;
+}
+
+void PwmIn::invertPolarity()
+{
+    _interuptIn.disable_irq();
+    _pulsewidth = 0;
+    _period = 0;
+    _interuptIn.rise(callback(this, &PwmIn::measurePulseWidth));
+    _interuptIn.fall(callback(this, &PwmIn::measurePeriodAndResetTimer));
+    _interuptIn.enable_irq();
 }
