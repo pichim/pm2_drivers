@@ -58,6 +58,8 @@
 #define FRAMEWIDTH                   315 
 #define FRAMEHEIGHT                  207
 
+#define M_PI 3.14159265358979323846  // number pi
+
 /**
  * @brief Class for communication and control of PixyCam2.
  *
@@ -97,22 +99,21 @@ public:
     } Block;
 
     /**
-     * @brief Set the PID controller parameters for pan movement.
+     * @brief Set the PI controller parameters for pan movement.
      *
      * @param kp Proportional gain.
      * @param ki Integral gain.
      * @param kd Derivative gain.
      */
     void setPanCntrl(float kp = p_KP, float ki = p_KI, float kd = p_KD);
-
     /**
-     * @brief Set the PID controller parameters for tilt movement.
+     * @brief Set the PI controller parameters for tilt movement.
      *
      * @param kp Proportional gain.
      * @param ki Integral gain.
      * @param kd Derivative gain.
      */
-    void setTiltCntrl(float kp = t_KP, float ki = t_KI, float kd = t_KD);
+    void setTiltCntrl(float kp = t_KP, float ki = t_KI, float kd = p_KD);
 
     /**
      * @brief Get the signature of the detected block.
@@ -192,6 +193,14 @@ public:
     void followerEnable(bool enable_var);
 
     /**
+    * @brief Checks for a new message availability.
+    *
+    * @return true If a new message is available.
+    * @return false If no new message is available.
+    */
+    bool checkForNewMessage();
+
+    /**
      * @brief Request and receive blocks information from PixyCam2.
      */
     void getBlocks();
@@ -230,6 +239,7 @@ public:
  
 private:
     static constexpr float PIXY_FREQ = 1.0f/60.0f;
+    static constexpr float TS_MIN = 2.2f * PIXY_FREQ;
     static constexpr float PERIOD_MUS = 1.0e6f * PIXY_FREQ;
     static constexpr float MIN_SERVO_POS = -500.0f;
     static constexpr float MAX_SERVO_POS = 500.0f;
@@ -249,18 +259,22 @@ private:
     static bool msg_start;
 
     // Pan follower cntrl
-    static constexpr float p_KP = 0.74f;
-    static constexpr float p_KI = 13.8f;
+    //static constexpr float p_KP = 1.2f;
+    //static constexpr float p_KI = 0.1f;
+
+    // // Pan follower cntrl
+    static constexpr float p_KP = 0.96f;
+    static constexpr float p_KI = 15.0f;
     static constexpr float p_KD = 0.0f;
 
     // Tilt follower cntrl
-    static constexpr float t_KP = 0.73f;
-    static constexpr float t_KI = 19.8;
+    static constexpr float t_KP = 0.83f;
+    static constexpr float t_KI = 16.0f;
     static constexpr float t_KD = 0.0f;
 
-    // Pan/Tilt offsets
-    int16_t panOffset;
-    int16_t tiltOffset;
+    // // Tilt follower cntrl
+    // static constexpr float t_KP = 0.73f;
+    // static constexpr float t_KI = 19.8f;
 
     // Pan/Tilt update values
     uint16_t panUpdate{500};
@@ -269,10 +283,16 @@ private:
     // Enabling follower variable
     bool isFollowerEnabled{false};
 
+    // New message variable checking
+    bool isNewMessage{false};
+
     // Function and clesses
     uint16_t checksum_check(int i);
     void msg_read(int i);
     void follow(uint16_t x, uint16_t y);
+    float pi_controller(float kp, float ki, float TS, float offset);
+    float saturate(float u, float uMin, float uMax);
+    float iir_filter(float u);
 
     PID_Cntrl camPanPID;
     PID_Cntrl camTiltPID;

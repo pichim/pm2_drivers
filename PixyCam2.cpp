@@ -9,17 +9,18 @@ PixyCam2::PixyCam2(PinName Tx,
                                camThread()
 {
     setServos(panUpdate, tiltUpdate);
-    setPanCntrl(PixyCam2::p_KP, PixyCam2::p_KI, PixyCam2::p_KD);
-    setTiltCntrl(PixyCam2::t_KP, PixyCam2::t_KI, PixyCam2::t_KD);
+    //setPanCntrl(PixyCam2::p_KP, PixyCam2::p_KI, PixyCam2::p_KD);
+    //setTiltCntrl(PixyCam2::t_KP, PixyCam2::t_KI, PixyCam2::t_KD);
     camThread.start(callback(this, &PixyCam2::getBlocks));
     camTicker.attach(callback(this, &PixyCam2::sendThreadFlag), std::chrono::microseconds{(int64_t)(PERIOD_MUS)});
 };
 
 // Class deconstructor 
-PixyCam2::~PixyCam2() {
+PixyCam2::~PixyCam2() 
+{
     camTicker.detach();
 }
-
+/*
 // Pan controller setup
 void PixyCam2::setPanCntrl(float kp, float ki, float kd)
 {
@@ -41,65 +42,82 @@ void PixyCam2::setTiltCntrl(float kp, float ki, float kd)
                     MIN_SERVO_POS,
                     MAX_SERVO_POS);
 }
-
+*/
 // Get signature func
-uint16_t PixyCam2::getSignature() {
+uint16_t PixyCam2::getSignature() 
+{
     return block.signature;
 }
 
 // Get x position func
-uint16_t PixyCam2::getX() {
+uint16_t PixyCam2::getX() 
+{
     return block.x;
 }
 
 // Get y position func
-uint16_t PixyCam2::getY() {
+uint16_t PixyCam2::getY() 
+{
     return block.y;
 }
 
 // Get width func
-uint16_t PixyCam2::getWidth() {
+uint16_t PixyCam2::getWidth() 
+{
     return block.width;
 }
 
 // Get height func
-uint16_t PixyCam2::getHeight() {
+uint16_t PixyCam2::getHeight() 
+{
     return block.height;
 }
 
 // Get angle func
-int16_t PixyCam2::getAngle() {
+int16_t PixyCam2::getAngle() 
+{
     return block.angle;
 }
 
 // Get index func
-uint8_t PixyCam2::getIndex() {
+uint8_t PixyCam2::getIndex() 
+{
     return block.index;
 }
 
 // Get age func
-uint8_t PixyCam2::getAge() {
+uint8_t PixyCam2::getAge() 
+{
     return block.age;
 }
 
 // Get pan command that is passed to servo
-uint16_t PixyCam2::getPanCommand() {
+uint16_t PixyCam2::getPanCommand() 
+{
     return panUpdate;
 }
 
 // Get tilt command that is passed to servo
-uint16_t PixyCam2::getTiltCommand() {
+uint16_t PixyCam2::getTiltCommand() 
+{
     return tiltUpdate;
 }
 
 // Enable following algorithm
-void PixyCam2::followerEnable(bool enable_var)
+void PixyCam2::followerEnable(bool enable_var) 
 {
     isFollowerEnabled = enable_var;
 }
 
+// Enable following algorithm
+bool PixyCam2::checkForNewMessage() 
+{
+    return isNewMessage;
+}
+
 // Set brightness functions 
-void PixyCam2::setCameraBrightness(uint8_t brightness) {
+void PixyCam2::setCameraBrightness(uint8_t brightness) 
+{
     outBuf[0] = PIXY_SEND_SYNC_1;
     outBuf[1] = PIXY_SEND_SYNC_2;
     outBuf[2] = PIXY_CAM_BRIGHTNESS_SYNC;
@@ -109,7 +127,8 @@ void PixyCam2::setCameraBrightness(uint8_t brightness) {
 }
 
 // Set servo functions
-void PixyCam2::setServos(uint16_t s0, uint16_t s1) {
+void PixyCam2::setServos(uint16_t s0, uint16_t s1) 
+{
     outBuf[0] = PIXY_SEND_SYNC_1;
     outBuf[1] = PIXY_SEND_SYNC_2;
     outBuf[2] = PIXY_SERVO_SYNC;
@@ -120,7 +139,8 @@ void PixyCam2::setServos(uint16_t s0, uint16_t s1) {
 }
 
 // Set LED functions
-void PixyCam2::setLED(uint8_t r, uint8_t g, uint8_t b) {
+void PixyCam2::setLED(uint8_t r, uint8_t g, uint8_t b) 
+{
     outBuf[0] = PIXY_SEND_SYNC_1;
     outBuf[1] = PIXY_SEND_SYNC_2;
     outBuf[2] = PIXY_LED_SYNC;
@@ -132,7 +152,8 @@ void PixyCam2::setLED(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 // Set lamp functions
-void PixyCam2::setLamp(bool up, bool down) {
+void PixyCam2::setLamp(bool up, bool down) 
+{
     outBuf[0] = PIXY_SEND_SYNC_1;
     outBuf[1] = PIXY_SEND_SYNC_2;
     outBuf[2] = PIXY_LAMP_SYNC;
@@ -143,14 +164,16 @@ void PixyCam2::setLamp(bool up, bool down) {
 }
 
 // Main thread function to get the information from camera
-void PixyCam2::getBlocks() {
+void PixyCam2::getBlocks() 
+{
     Timer timer;
     timer.start();
     timer.reset();
     int dtime_mus = 0;
     static uint8_t msg_buffer_index;
     static bool msg_start;
-    uint32_t i;
+    int i;
+    int j;
 
     while(true) {
         ThisThread::flags_wait_any(camThreadFlag);
@@ -163,8 +186,14 @@ void PixyCam2::getBlocks() {
         outBuf[5] = 1; // maximum blocks to return (I want only one block to not make the bigger problem, should be the biggest one)
 
         camBufferedSerial.write(outBuf, OUT_BUFF_SIZE);
-        msg_start = false;
+        
         dtime_mus = 0;
+        msg_start = false;
+        // TODO Could be parametrized somehow
+        j += 1;
+        if (j > 5) {
+            isNewMessage = false;
+        }
         if (camBufferedSerial.readable()) {
             uint32_t msg_len = camBufferedSerial.read(buffer, BUFF_SIZE);
             for (i = 0; i < msg_len; i++) {
@@ -174,12 +203,13 @@ void PixyCam2::getBlocks() {
                         checksum = *(uint16_t *)&msg_buffer[0];
                         sum = checksum_check(2);
                         if (sum == checksum) {
+                            isNewMessage = true;
                             msg_read(0);
                             TS = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count() * 1.0e-6f;
-                            timer.reset();
                             if(isFollowerEnabled == true) {
                                 follow(getX(), getY());
                             }
+                            timer.reset();
                             msg_start = false;
                         }
                     }
@@ -195,6 +225,7 @@ void PixyCam2::getBlocks() {
                         checksum = 0;
                         sum = 0;
                         msg_buffer_index = 0;
+                        j = 0;
                     }
                     else if (check_buffer[1] == 1 && check_buffer[0] == 4){
                         //i += 6;
@@ -206,7 +237,8 @@ void PixyCam2::getBlocks() {
 }
 
 // Checksum checking
-uint16_t PixyCam2::checksum_check(int i) {
+uint16_t PixyCam2::checksum_check(int i) 
+{
     sum = 0;
     for (int j = i; j < (CCC_RESPONSE_LEN + i); j++) {
         sum += msg_buffer[j];
@@ -215,7 +247,8 @@ uint16_t PixyCam2::checksum_check(int i) {
 }
 
 // Reading message function
-void PixyCam2::msg_read(int i) {
+void PixyCam2::msg_read(int i) 
+{
     block.signature = *(uint16_t *)&msg_buffer[i+2];
     block.x = *(uint16_t *)&msg_buffer[i+4];
     block.y = *(uint16_t *)&msg_buffer[i+6];
@@ -233,13 +266,90 @@ void PixyCam2::sendThreadFlag()
 }
 
 // Object follower
-void PixyCam2::follow(uint16_t x, uint16_t y) {
-    camPanPID.setCoefficients(p_KP, p_KI, p_KD, 0.0f, 0.0f, TS);
-    camTiltPID.setCoefficients(t_KP, t_KI, t_KD, 0.0f, 0.0f, TS);
-    panOffset = (uint16_t)(FRAMEWIDTH/2) - x;
-    tiltOffset = y - (uint16_t)(FRAMEHEIGHT/2);
-    panUpdate = SERVO_SET_POINT + (int16_t)camPanPID.update(panOffset);
-    tiltUpdate = SERVO_SET_POINT + (int16_t)camTiltPID.update(tiltOffset);
-    printf("%f, %d, %d \n", TS, panUpdate, tiltUpdate);
-    setServos(panUpdate, tiltUpdate);
+void PixyCam2::follow(uint16_t x_k, uint16_t y_k) 
+{
+    static const int16_t panThreshold = 16;
+    static const int16_t tiltThreshold = 9;
+    static float panOffset;
+    static float tiltOffset;
+    static uint16_t panUpdate_old; 
+    static uint16_t tiltUpdate_old; 
+    static float x;
+    static float y;
+
+    // IIR filter
+    x = iir_filter(x_k);
+    y = iir_filter(y_k);
+
+    //if (TS > TS_MIN) {
+    //TS = PIXY_FREQ;
+    //}
+    //camPanPID.setCoefficients(p_KP, p_KI, p_KD, 0.0f, 0.0f, TS);
+    //camTiltPID.setCoefficients(t_KP, t_KI, t_KD, 0.0f, 0.0f, TS);
+
+    panOffset = ((float)(FRAMEWIDTH/2.0f) - x);
+    tiltOffset = (y - (float)(FRAMEHEIGHT/2.0f));
+
+    /*
+    if (abs(panOffset) > panThreshold) {
+        panUpdate = SERVO_SET_POINT + (int16_t)pi_controller(p_KP, p_KI, TS, panOffset);  
+    } else {
+        panUpdate = panUpdate_old;
+    }
+    if ((abs(tiltOffset) > tiltThreshold)) {
+        tiltUpdate = SERVO_SET_POINT + (int16_t)pi_controller(t_KP, t_KI, TS, tiltOffset);
+    } else {
+        tiltUpdate = tiltUpdate_old;
+    }
+    */
+
+    panUpdate = SERVO_SET_POINT + (int16_t)pi_controller(p_KP, p_KI, PIXY_FREQ, panOffset);
+    tiltUpdate = SERVO_SET_POINT + (int16_t)pi_controller(t_KP, t_KI, PIXY_FREQ, tiltOffset);
+    
+    printf("%hu, %f, %f \n", x_k, x, panOffset);
+    setServos(panUpdate, 500);
+    panUpdate_old = panUpdate;
+    tiltUpdate_old = tiltUpdate;
 }
+
+
+// PI controller
+float PixyCam2::pi_controller(float kp, float ki, float TS, float offset) 
+{
+    static float update;
+    static float up;
+    static float ui;
+    up = kp * offset;
+    ui = saturate(ui + ki * TS * offset, MIN_SERVO_POS, MAX_SERVO_POS);
+    update = saturate(up + ui, MIN_SERVO_POS, MAX_SERVO_POS);
+    return update;
+}
+
+float PixyCam2::iir_filter(float u_k) 
+{
+    static float u_k_1;
+    static float y_k;
+    static float y_k_1;
+    static const float tau = 1.0f / (1.0f * M_PI * 4.0f);
+    static const float Ts = PIXY_FREQ;
+
+    static float a1 = Ts + 2.0f * tau;
+    static float a0 = (Ts - 2.0f *tau) / a1;
+    static float b0 = Ts/a1;
+    static float b1 = b0;
+
+    y_k = b1 * u_k + b0 * u_k_1 - a0 * y_k_1;
+
+    u_k_1 = u_k;
+    y_k_1 = y_k;
+
+    return y_k;
+}
+
+
+
+float PixyCam2::saturate(float u, float uMin, float uMax)
+{
+    return (u > uMax) ? uMax : (u < uMin) ? uMin : u;
+}
+
