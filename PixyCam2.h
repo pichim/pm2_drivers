@@ -5,7 +5,17 @@
  * 
  * Created: 11/2023
  * Author: Maciej
+
+
+ * There are two controllers included in this driver:
+ * - From PM2 drivers library
+ * - Coded by me
+ * Now the one from the drivers library is working but if you want to use mine 
+ * you need to comment out sections marked with (pm2drivers) and uncomment sections
+ * marked with (szar)
 */
+
+
 
 #ifndef PIXY_CAM_2_H
 #define PIXY_CAM_2_H
@@ -17,6 +27,8 @@
 #include <stdint.h>
 #include "ThreadFlag.h"
 #include "PID_Cntrl.h"
+#include "IIR_Filter.h"
+
 
 // Standard Bytes
 #define PIXY_SEND_SYNC_1            0xae
@@ -98,6 +110,8 @@ public:
         uint8_t age;        /**< Age of the block */
     } Block;
 
+    // pm2drivers
+    // PM DRIVERS CONTROLLER FUNCTIONS (setPanCntrl, setTiltCntrl, comment out to use my controller)
     /**
      * @brief Set the PI controller parameters for pan movement.
      *
@@ -258,11 +272,9 @@ private:
     static uint8_t msg_buffer_index;
     static bool msg_start;
 
+    // pm2drivers
+    // Comment out if you are using my controllers and filter
     // Pan follower cntrl
-    //static constexpr float p_KP = 1.2f;
-    //static constexpr float p_KI = 0.1f;
-
-    // // Pan follower cntrl
     static constexpr float p_KP = 0.96f;
     static constexpr float p_KI = 15.0f;
     static constexpr float p_KD = 0.0f;
@@ -271,6 +283,15 @@ private:
     static constexpr float t_KP = 0.83f;
     static constexpr float t_KI = 16.0f;
     static constexpr float t_KD = 0.0f;
+
+    static constexpr float p_T = 1.0f/(2.0f * M_PI * 20.0f);
+    static constexpr float t_T = 1.0f/(2.0f * M_PI * 20.0f);
+
+    // szar
+    // // MY CONTROLLER WITH IIR FILTER (uncomment to use)
+    // // Pan follower cntrl
+    // static constexpr float p_KP = 1.2f;
+    // static constexpr float p_KI = 0.1f;
 
     // // Tilt follower cntrl
     // static constexpr float t_KP = 0.73f;
@@ -290,15 +311,20 @@ private:
     uint16_t checksum_check(int i);
     void msg_read(int i);
     void follow(uint16_t x, uint16_t y);
-    float pi_controller(float kp, float ki, float TS, float offset);
-    float saturate(float u, float uMin, float uMax);
-    float iir_filter(float u);
+
+    // szar
+    // MY CONTROLLER WITH IIR FILTER (uncomment to use)
+    // float pi_controller(float kp, float ki, float TS, float offset);
+    // float saturate(float u, float uMin, float uMax);
+    // float iir_filter(float u);
 
     PID_Cntrl camPanPID;
     PID_Cntrl camTiltPID;
     Timer camTimer;
     BufferedSerial camBufferedSerial;
     Block block;
+    IIR_Filter iirPanFilter;
+    IIR_Filter iirTiltFilter;
 
     //Thread
     ThreadFlag camThreadFlag;

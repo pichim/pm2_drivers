@@ -9,8 +9,12 @@ PixyCam2::PixyCam2(PinName Tx,
                                camThread()
 {
     setServos(panUpdate, tiltUpdate);
-    //setPanCntrl(PixyCam2::p_KP, PixyCam2::p_KI, PixyCam2::p_KD);
-    //setTiltCntrl(PixyCam2::t_KP, PixyCam2::t_KI, PixyCam2::t_KD);
+    // pm2drivers
+    // PM DRIVERS CONTROLLER FUNCTIONS (setPanCntrl, setTiltCntrl, comment out to use my controller)
+    setPanCntrl(PixyCam2::p_KP, PixyCam2::p_KI, PixyCam2::p_KD);
+    setTiltCntrl(PixyCam2::t_KP, PixyCam2::t_KI, PixyCam2::t_KD);
+    iirPanFilter.setup(0.1f, PIXY_FREQ, 1.0f);
+    iirTiltFilter.setup(0.1f, PIXY_FREQ, 1.0f);
     camThread.start(callback(this, &PixyCam2::getBlocks));
     camTicker.attach(callback(this, &PixyCam2::sendThreadFlag), std::chrono::microseconds{(int64_t)(PERIOD_MUS)});
 };
@@ -20,7 +24,9 @@ PixyCam2::~PixyCam2()
 {
     camTicker.detach();
 }
-/*
+
+// pm2drivers
+// PM DRIVERS CONTROLLER FUNCTIONS (setPanCntrl, setTiltCntrl, comment out to use my controller)
 // Pan controller setup
 void PixyCam2::setPanCntrl(float kp, float ki, float kd)
 {
@@ -42,7 +48,7 @@ void PixyCam2::setTiltCntrl(float kp, float ki, float kd)
                     MIN_SERVO_POS,
                     MAX_SERVO_POS);
 }
-*/
+
 // Get signature func
 uint16_t PixyCam2::getSignature() 
 {
@@ -265,6 +271,55 @@ void PixyCam2::sendThreadFlag()
     camThread.flags_set(camThreadFlag);
 }
 
+// pm2drivers
+// Object follower
+void PixyCam2::follow(uint16_t x_k, uint16_t y_k) 
+{
+    static const int16_t panThreshold = 16;
+    static const int16_t tiltThreshold = 9;
+    static float panOffset;
+    static float tiltOffset;
+    static uint16_t panUpdate_old; 
+    static uint16_t tiltUpdate_old; 
+    static float x;
+    static float y;
+
+    if (TS > TS_MIN) {
+    TS = PIXY_FREQ;
+    }
+    camPanPID.setCoefficients(p_KP, p_KI, p_KD, 0.0f, 0.0f, TS);
+    camTiltPID.setCoefficients(t_KP, t_KI, t_KD, 0.0f, 0.0f, TS);
+
+    panOffset = ((float)(FRAMEWIDTH/2.0f) - x_k);
+    tiltOffset = (y_k - (float)(FRAMEHEIGHT/2.0f));
+
+    panUpdate = SERVO_SET_POINT + camPanPID.update(panOffset);
+    tiltUpdate = SERVO_SET_POINT + camTiltPID.update(tiltOffset);
+    
+    // Threshold 
+    // if (abs(panOffset) > panThreshold) {
+    //     panUpdate = SERVO_SET_POINT + camPanPID.update(panOffset); 
+    // } else {
+    //     panUpdate = SERVO_SET_POINT + panUpdate_old;
+    // }
+    // if ((abs(tiltOffset) > tiltThreshold)) {
+    //     tiltUpdate = SERVO_SET_POINT + camTiltPID.update(tiltOffset);
+    // } else {
+    //     tiltUpdate = SERVO_SET_POINT + tiltUpdate_old;
+    // }
+
+    
+    printf("%d, %d \n", panUpdate, tiltUpdate);
+    setServos(panUpdate, tiltUpdate);
+    panUpdate_old = panUpdate;
+    tiltUpdate_old = tiltUpdate;
+}
+
+
+// szar
+// MY CONTROLLER WITH IIR FILTER
+/*
+
 // Object follower
 void PixyCam2::follow(uint16_t x_k, uint16_t y_k) 
 {
@@ -281,16 +336,9 @@ void PixyCam2::follow(uint16_t x_k, uint16_t y_k)
     x = iir_filter(x_k);
     y = iir_filter(y_k);
 
-    //if (TS > TS_MIN) {
-    //TS = PIXY_FREQ;
-    //}
-    //camPanPID.setCoefficients(p_KP, p_KI, p_KD, 0.0f, 0.0f, TS);
-    //camTiltPID.setCoefficients(t_KP, t_KI, t_KD, 0.0f, 0.0f, TS);
-
     panOffset = ((float)(FRAMEWIDTH/2.0f) - x);
     tiltOffset = (y - (float)(FRAMEHEIGHT/2.0f));
 
-    /*
     if (abs(panOffset) > panThreshold) {
         panUpdate = SERVO_SET_POINT + (int16_t)pi_controller(p_KP, p_KI, TS, panOffset);  
     } else {
@@ -300,14 +348,9 @@ void PixyCam2::follow(uint16_t x_k, uint16_t y_k)
         tiltUpdate = SERVO_SET_POINT + (int16_t)pi_controller(t_KP, t_KI, TS, tiltOffset);
     } else {
         tiltUpdate = tiltUpdate_old;
-    }
-    */
+    }   
 
-    panUpdate = SERVO_SET_POINT + (int16_t)pi_controller(p_KP, p_KI, PIXY_FREQ, panOffset);
-    tiltUpdate = SERVO_SET_POINT + (int16_t)pi_controller(t_KP, t_KI, PIXY_FREQ, tiltOffset);
-    
-    printf("%hu, %f, %f \n", x_k, x, panOffset);
-    setServos(panUpdate, 500);
+    setServos(panUpdate, tiltUpdate);
     panUpdate_old = panUpdate;
     tiltUpdate_old = tiltUpdate;
 }
@@ -346,10 +389,9 @@ float PixyCam2::iir_filter(float u_k)
     return y_k;
 }
 
-
-
 float PixyCam2::saturate(float u, float uMin, float uMax)
 {
     return (u > uMax) ? uMax : (u < uMin) ? uMin : u;
 }
 
+*/
