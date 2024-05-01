@@ -1,7 +1,6 @@
-#ifndef SensorBar_H
-#define SensorBar_H
+#ifndef SENSOR_BAR_H_
+#define SENSOR_BAR_H_
 
-#include <mbed.h>
 #include "AvgFilter.h"
 #include "ThreadFlag.h"
 
@@ -130,18 +129,46 @@
 #define INTERNAL_CLOCK  2
 #define EXTERNAL_CLOCK  1
 
+const char REG_I_ON[16] = {REG_I_ON_0, REG_I_ON_1, REG_I_ON_2, REG_I_ON_3,
+                           REG_I_ON_4, REG_I_ON_5, REG_I_ON_6, REG_I_ON_7,
+                           REG_I_ON_8, REG_I_ON_9, REG_I_ON_10, REG_I_ON_11,
+                           REG_I_ON_12, REG_I_ON_13, REG_I_ON_14, REG_I_ON_15
+                          };
+
+const char REG_T_ON[16] = {REG_T_ON_0, REG_T_ON_1, REG_T_ON_2, REG_T_ON_3,
+                           REG_T_ON_4, REG_T_ON_5, REG_T_ON_6, REG_T_ON_7,
+                           REG_T_ON_8, REG_T_ON_9, REG_T_ON_10, REG_T_ON_11,
+                           REG_T_ON_12, REG_T_ON_13, REG_T_ON_14, REG_T_ON_15
+                          };
+
+const char REG_OFF[16] = {REG_OFF_0, REG_OFF_1, REG_OFF_2, REG_OFF_3,
+                          REG_OFF_4, REG_OFF_5, REG_OFF_6, REG_OFF_7,
+                          REG_OFF_8, REG_OFF_9, REG_OFF_10, REG_OFF_11,
+                          REG_OFF_12, REG_OFF_13, REG_OFF_14, REG_OFF_15
+                         };
+
+const char REG_T_RISE[16] = {0xFF, 0xFF, 0xFF, 0xFF,
+                             REG_T_RISE_4, REG_T_RISE_5, REG_T_RISE_6, REG_T_RISE_7,
+                             0xFF, 0xFF, 0xFF, 0xFF,
+                             REG_T_RISE_12, REG_T_RISE_13, REG_T_RISE_14, REG_T_RISE_15
+                            };
+
+const char REG_T_FALL[16] = {0xFF, 0xFF, 0xFF, 0xFF,
+                             REG_T_FALL_4, REG_T_FALL_5, REG_T_FALL_6, REG_T_FALL_7,
+                             0xFF, 0xFF, 0xFF, 0xFF,
+                             REG_T_FALL_12, REG_T_FALL_13, REG_T_FALL_14, REG_T_FALL_15
+                            };
+
 class SensorBar
 {
 public:
-    //New functions for bar specific operation
-    SensorBar(I2C& i2c, float distAxisToSensor = 0.12f);
+    explicit SensorBar(PinName sda,
+                       PinName scl,
+                       float bar_dist,
+                       bool run_as_thread = true);
     virtual ~SensorBar();
 
-    //Functions pulled from the SX1509 driver
-    // void debounceConfig( uint8_t configValue );
-    // void debounceEnable( uint8_t pin );
-    // unsigned int interruptSource();
-    // void configClock( uint8_t oscSource = 2, uint8_t oscPinFunction = 0, uint8_t oscFreqOut = 0, uint8_t oscDivider = 1 );
+    static constexpr int64_t PERIOD_MUS = 4000;
 
     void setBarStrobe();    // to only illuminate while reading line
     void clearBarStrobe();  // to illuminate all the time
@@ -154,38 +181,38 @@ public:
     float getAvgAngleRad();
     uint8_t getNrOfLedsActive();
     bool isAnyLedActive();
+    void update();
 
 private:
-    //Holding variables
+    // holding variables
     uint8_t lastBarRawValue;
     uint8_t lastBarPositionValue;
     float distAxisToSensor;
 
-    //Settings
+    // settings
     uint8_t deviceAddress; // I2C Address of SX1509
-    uint8_t barStrobe; // 0 = always on, 1 = power saving by IR LED strobe
-    uint8_t invertBits; // 1 = invert
+    uint8_t barStrobe;     // 0 = always on, 1 = power saving by IR LED strobe
+    uint8_t invertBits;    // 1 = invert
 
-    // Pin definitions:
+    // pin definitions
     uint8_t pinInterrupt;
     uint8_t pinOscillator;
     uint8_t pinReset;
 
-    bool begin();        // Run this once during initialization to configure the SX1509 as a sensor bar
+    bool begin(); // run this once during initialization to configure the SX1509 as a sensor bar
     void reset();
 
-    // Read Functions:
+    // read Functions:
     uint8_t readByte(uint8_t registerAddress);
     unsigned int readWord(uint8_t registerAddress);
     void readBytes(uint8_t firstRegisterAddress, char * destination, uint8_t length);
-    // Write functions:
+
+    // write functions:
     void writeByte(uint8_t registerAddress, uint8_t writeValue);
     void writeWord(uint8_t registerAddress, unsigned int writeValue);
     void writeBytes(uint8_t firstRegisterAddress, uint8_t * writeArray, uint8_t length);
 
-    I2C& i2c;
-
-    static const float TS;
+    I2C i2c;
 
     static const char REG_I_ON[16];
     static const char REG_T_ON[16];
@@ -202,41 +229,10 @@ private:
     AvgFilter avg_filter;
     bool is_first_avg;
 
-    void update();
+    void updateAsThread();
     float updateAngleRad();
     uint8_t updateNrOfLedsActive();
     void sendThreadFlag();
 };
 
-#endif /* SensorBar_H */
-
-//****************************************************************************//
-//
-//  Circular Buffer
-//
-//****************************************************************************//
-
-//Class CircularBuffer is int16_t
-//Does not care about over-running real data ( if request is outside length's bounds ).
-//For example, the underlying machine writes [48], [49], [0], [1] ...
-
-/*
-namespace name
-{
-class CircularBuffer
-{
-public:
-    CircularBuffer( uint16_t inputSize );
-    ~CircularBuffer();
-    int16_t getElement( uint16_t ); //zero is the push location
-    void pushElement( int16_t );
-    int16_t averageLast( uint16_t );
-    uint16_t recordLength();
-private:
-    uint16_t cBufferSize;
-    int16_t *cBufferData;
-    int16_t cBufferLastPtr;
-    uint8_t cBufferElementsUsed;
-};
-}
-*/
+#endif /* SENSOR_BAR_H_ */

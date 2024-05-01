@@ -15,16 +15,16 @@ public:
      *
      * @param sda_pin I2C data line pin
      * @param scl_pin I2C clock line pin
-     * @param bar_dist Distance between sensor bar and wheelbase.
-     * @param d_wheel Diameter of the wheel.
-     * @param L_wheel Wheelbase.
+     * @param bar_dist Distance between sensor bar and wheelbase in meters.
+     * @param d_wheel Diameter of the wheels in meters.
+     * @param b_wheel Wheelbase (distance between the wheels) in meters.
      * @param max_motor_vel_rps Maximum motor velocity in rotations per second.
      */
     explicit LineFollower(PinName sda_pin,
                           PinName scl_pin,
                           float bar_dist,
                           float d_wheel,
-                          float L_wheel,
+                          float b_wheel,
                           float max_motor_vel_rps);
 
     /**
@@ -43,9 +43,9 @@ public:
     /**
      * @brief Set the maximum wheel velocity.
      *
-     * @param max_wheel_vel Maximum wheel velocity.
+     * @param wheel_vel_max Maximum wheel velocity.
      */
-    void setMaxWheelVelocity(float max_wheel_vel);
+    void setMaxWheelVelocityRPS(float wheel_vel_max);
 
     /**
      * @brief Get the angle in radians.
@@ -99,37 +99,27 @@ public:
 
 
 private:
-    static constexpr int64_t PERIOD_MUS = 10000;
-
-    // geometric parameters
-    float m_r_wheel; // wheel radius
-    float m_L_wheel; // wheel base
-
     // rotational velocity controller
-    float m_Kp{3.0f};
-    float m_Kp_nl{17.0f};
+    float m_Kp;
+    float m_Kp_nl;
 
-    // velocity controller data
-    float m_max_motor_vel;
-
+    // TODO: proper comments
     float m_rotation_to_wheel_vel;
-    float m_max_wheel_vel;
-    float m_max_wheel_vel_rads;
+    float m_motor_vel_max_rps;
+    float m_wheel_vel_max_rps;
 
     // wheels velocities
-    float m_left_wheel_velocity;
-    float m_right_wheel_velocity;
+    float m_wheel_left_velocity_rps{0.0f};
+    float m_wheel_right_velocity_rps{0.0f};
 
     // angle line sensor
-    float m_sensor_bar_avgAngleRad;
-    bool isAnyLedActive{false};
+    float m_angle{0.0};
+    bool is_any_led_active{false};
 
-    I2C m_i2c;
     SensorBar m_SensorBar;
 
-    Eigen::Matrix2f m_Cwheel2robot; // transform robot to wheel
-    Eigen::Vector2f m_robot_coord;  // contains w and v (robot rotational and translational velocities)
-    Eigen::Vector2f m_wheel_speed;  // w1 w2 (wheel speed) rad/sec
+    Eigen::Matrix2f m_Cwheel2robot; // transforms robot to wheel coordinates
+    Eigen::Vector2f m_robot_coord;  // contains w and v (robot rot. and trans. velocities)
 
     // thread objects
     Thread m_Thread;
@@ -137,8 +127,11 @@ private:
     ThreadFlag m_ThreadFlag;
 
     // velocity controller functions
-    float ang_cntrl_fcn(float Kp, float Kp_nl, float sensor_bar_avgAngleRad);
-    float vel_cntrl_fcn(float wheel_speed_max, float b, float robot_omega, Eigen::Matrix2f Cwheel2robot);
+    float ang_cntrl_fcn(float Kp, float Kp_nl, float angle);
+    float vel_cntrl_fcn(float wheel_vel_max,
+                        float rotation_to_wheel_vel,
+                        float robot_ang_vel,
+                        Eigen::Matrix2f Cwheel2robot);
 
     // thread functions
     void followLine();

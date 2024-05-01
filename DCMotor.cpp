@@ -106,6 +106,12 @@ void DCMotor::setRotation(float rotation)
     m_rotation_target = m_rotation_initial + rotation;
 }
 
+void DCMotor::setRotationRelative(float rotation_relative)
+{
+    m_cntrlMode = CntrlMode::Rotation;
+    m_rotation_target += rotation_relative;
+}
+
 float DCMotor::getRotationTarget() const
 {
     return m_rotation_target;
@@ -159,9 +165,14 @@ void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
                                m_voltage_max * (2.0f * PWM_MIN - 1.0f),
                                m_voltage_max * (2.0f * PWM_MAX - 1.0f));
     // avoid students melting their motors
-    const float gain = 0.3f;
-    m_PID_Cntrl_velocity.setIntegratorLimits(gain * m_voltage_max * (2.0f * PWM_MIN - 1.0f),
-                                             gain * m_voltage_max * (2.0f * PWM_MAX - 1.0f));
+    setVelocityCntrlIntegratorLimitsPercent();
+}
+
+void DCMotor::setVelocityCntrlIntegratorLimitsPercent(float percent_of_max)
+{
+    percent_of_max = percent_of_max * 0.01f;
+    m_PID_Cntrl_velocity.setIntegratorLimits(percent_of_max * m_voltage_max * (2.0f * PWM_MIN - 1.0f),
+                                             percent_of_max * m_voltage_max * (2.0f * PWM_MAX - 1.0f));
 }
 
 void DCMotor::setRotationCntrlGain(float p)

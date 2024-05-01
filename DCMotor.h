@@ -100,6 +100,13 @@ public:
     void setRotation(float rotation);
 
     /**
+     * @brief Set the relative target rotation of the motor.
+     *
+     * @param rotation_relative The relative target rotation in degrees.
+     */
+    void setRotationRelative(float rotation_relative);
+
+    /**
      * @brief Get the current rotation target of the motor.
      *
      * @return float The current rotation target in degrees.
@@ -163,6 +170,13 @@ public:
      * @param kd The derivative gain.
      */
     void setVelocityCntrl(float kp = KP, float ki = KI, float kd = KD);
+
+    /**
+     * @brief Set the integrator limits for the velocity PID controller.
+     *
+     * @param percent_of_max The percentage of the maximum output of the controller.
+     */
+    void setVelocityCntrlIntegratorLimitsPercent(float percent_of_max = 30.0f);
 
     /**
      * @brief Set the gain for the rotation control.

@@ -1,38 +1,11 @@
 #include "SensorBar.h"
 
-const float SensorBar::TS = 0.004f;                       // period of 1 ms
-
-const char REG_I_ON[16] = {REG_I_ON_0, REG_I_ON_1, REG_I_ON_2, REG_I_ON_3,
-                           REG_I_ON_4, REG_I_ON_5, REG_I_ON_6, REG_I_ON_7,
-                           REG_I_ON_8, REG_I_ON_9, REG_I_ON_10, REG_I_ON_11,
-                           REG_I_ON_12, REG_I_ON_13, REG_I_ON_14, REG_I_ON_15
-                          };
-
-const char REG_T_ON[16] = {REG_T_ON_0, REG_T_ON_1, REG_T_ON_2, REG_T_ON_3,
-                           REG_T_ON_4, REG_T_ON_5, REG_T_ON_6, REG_T_ON_7,
-                           REG_T_ON_8, REG_T_ON_9, REG_T_ON_10, REG_T_ON_11,
-                           REG_T_ON_12, REG_T_ON_13, REG_T_ON_14, REG_T_ON_15
-                          };
-
-const char REG_OFF[16] = {REG_OFF_0, REG_OFF_1, REG_OFF_2, REG_OFF_3,
-                          REG_OFF_4, REG_OFF_5, REG_OFF_6, REG_OFF_7,
-                          REG_OFF_8, REG_OFF_9, REG_OFF_10, REG_OFF_11,
-                          REG_OFF_12, REG_OFF_13, REG_OFF_14, REG_OFF_15
-                         };
-
-const char REG_T_RISE[16] = {0xFF, 0xFF, 0xFF, 0xFF,
-                             REG_T_RISE_4, REG_T_RISE_5, REG_T_RISE_6, REG_T_RISE_7,
-                             0xFF, 0xFF, 0xFF, 0xFF,
-                             REG_T_RISE_12, REG_T_RISE_13, REG_T_RISE_14, REG_T_RISE_15
-                            };
-
-const char REG_T_FALL[16] = {0xFF, 0xFF, 0xFF, 0xFF,
-                             REG_T_FALL_4, REG_T_FALL_5, REG_T_FALL_6, REG_T_FALL_7,
-                             0xFF, 0xFF, 0xFF, 0xFF,
-                             REG_T_FALL_12, REG_T_FALL_13, REG_T_FALL_14, REG_T_FALL_15
-                            };
-
-SensorBar::SensorBar(I2C& i2c, float distAxisToSensor) : i2c(i2c), thread(osPriorityAboveNormal, 4096)
+SensorBar::SensorBar(PinName sda,
+                     PinName scl,
+                     float bar_dist,
+                     bool run_as_thread) : distAxisToSensor(bar_dist)
+                                         , i2c(sda, scl)
+                                         , thread(osPriorityAboveNormal2, 4096)
 {
     // Store the received parameters into member variables
     deviceAddress = 0x3E<<1;
@@ -40,9 +13,8 @@ SensorBar::SensorBar(I2C& i2c, float distAxisToSensor) : i2c(i2c), thread(osPrio
     pinOscillator = 255;
     pinReset = 255;
     invertBits = 0;
-    barStrobe = 0; //Default always on
+    barStrobe = 0;
 
-    this->distAxisToSensor = distAxisToSensor;
     lastBarRawValue = lastBarPositionValue = 0;
 
     angle = avg_angle = 0;
@@ -53,77 +25,17 @@ SensorBar::SensorBar(I2C& i2c, float distAxisToSensor) : i2c(i2c), thread(osPrio
     clearBarStrobe();  // to illuminate all the time
     clearInvertBits(); // to make the bar look for a dark line on a reflective surface
 
-    // set up thread
-    if (begin()) {
-        thread.start(callback(this, &SensorBar::update));
-        ticker.attach(callback(this, &SensorBar::sendThreadFlag), std::chrono::microseconds{static_cast<long int>(1.0e6f * TS)});
+    if (run_as_thread && begin()) {
+        thread.start(callback(this, &SensorBar::updateAsThread));
+        ticker.attach(callback(this, &SensorBar::sendThreadFlag), std::chrono::microseconds{PERIOD_MUS});
     }
 }
 
 SensorBar::~SensorBar()
 {
     ticker.detach();
+    thread.terminate();
 }
-
-// --- Functions pulled from the SX1509 driver
-
-/*
-void SensorBar::debounceConfig(uint8_t configValue)
-{
-    // First make sure clock is configured
-    uint8_t tempuint8_t = readByte(REG_MISC);
-    if ((tempuint8_t & 0x70) == 0) {
-        tempuint8_t |= (1 << 4);    // Just default to no divider if not set
-        writeByte(REG_MISC, tempuint8_t);
-    }
-    tempuint8_t = readByte(REG_CLOCK);
-    if ((tempuint8_t & 0x60) == 0) {
-        tempuint8_t |= (1 << 6);    // default to internal osc.
-        writeByte(REG_CLOCK, tempuint8_t);
-    }
-
-    configValue &= 0b111; // 3-bit value
-    writeByte(REG_DEBOUNCE_CONFIG, configValue);
-}
-
-void SensorBar::debounceEnable(uint8_t pin)
-{
-    unsigned int debounceEnable = readWord(REG_DEBOUNCE_ENABLE_B);
-    debounceEnable |= (1 << pin);
-    writeWord(REG_DEBOUNCE_ENABLE_B, debounceEnable);
-}
-
-unsigned int SensorBar::interruptSource(void)
-{
-    unsigned int intSource = readWord(REG_INTERRUPT_SOURCE_B);
-    writeWord(REG_INTERRUPT_SOURCE_B, 0xFFFF);    // Clear interrupts
-    return intSource;
-}
-
-void SensorBar::configClock(uint8_t oscSource, uint8_t oscPinFunction, uint8_t oscFreqOut, uint8_t oscDivider)
-{
-    // RegClock constructed as follows:
-    //    6:5 - Oscillator frequency souce
-    //        00: off, 01: external input, 10: internal 2MHz, 1: reserved
-    //    4 - OSCIO pin function
-    //        0: input, 1 ouptut
-    //    3:0 - Frequency of oscout pin
-    //        0: LOW, 0xF: high, else fOSCOUT = FoSC/(2^(RegClock[3:0]-1))
-    oscSource = (oscSource & 0b11) << 5;      // 2-bit value, bits 6:5
-    oscPinFunction = (oscPinFunction & 1) << 4;   // 1-bit value bit 4
-    oscFreqOut = (oscFreqOut & 0b1111);   // 4-bit value, bits 3:0
-    uint8_t regClock = oscSource | oscPinFunction | oscFreqOut;
-    writeByte(REG_CLOCK, regClock);
-
-    // Config RegMisc[6:4] with oscDivider
-    // 0: off, else ClkX = fOSC / (2^(RegMisc[6:4] -1))
-    oscDivider = (oscDivider & 0b111) << 4;   // 3-bit value, bits 6:4
-    uint8_t regMisc = readByte(REG_MISC);
-    regMisc &= ~(0b111 << 4);
-    regMisc |= oscDivider;
-    writeByte(REG_MISC, regMisc);
-}
-*/
 
 //Call .setBarStrobing(); to only illuminate while reading line
 void SensorBar::setBarStrobe()
@@ -187,6 +99,75 @@ bool SensorBar::isAnyLedActive()
         retval =  true;
     }
     return retval;
+}
+
+void SensorBar::update()
+{
+    //Assign values to each bit, -127 to 127, sum, and divide
+    int16_t accumulator = 0;
+    uint8_t bitsCounted = 0;
+    int16_t i;
+
+    //Get the information from the wire, stores in lastBarRawValue
+    if( barStrobe == 1 ) {
+        writeByte(REG_DATA_B, 0x02); //Turn on IR
+        thread_sleep_for(2); // wait_us(2000);
+        writeByte(REG_DATA_B, 0x00); //Turn on feedback
+    } else {
+        writeByte(REG_DATA_B, 0x00); //make sure both IR and indicators are on
+    }
+    //Operate the I2C machine
+    lastBarRawValue = readByte( REG_DATA_A );  //Peel the data off port A
+
+    if( invertBits == 1 ) { //Invert the bits if needed
+        lastBarRawValue ^= 0xFF;
+    }
+
+    if( barStrobe == 1 ) {
+        writeByte(REG_DATA_B, 0x03); //Turn off IR and feedback when done
+    }
+
+    //count bits
+    for ( i = 0; i < 8; i++ ) {
+        if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
+            bitsCounted++;
+        }
+    }
+
+    //Find the vector value of each positive bit and sum
+    for ( i = 7; i > 3; i-- ) { //iterate negative side bits
+        if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
+            accumulator += ((-32 * (i - 3)) + 1);
+        }
+    }
+    for ( i = 0; i < 4; i++ ) { //iterate positive side bits
+        if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
+            accumulator += ((32 * (4 - i)) - 1);
+        }
+    }
+
+    if ( bitsCounted > 0 ) {
+        lastBarPositionValue = accumulator / bitsCounted;
+    } else {
+        lastBarPositionValue = 0;
+    }
+
+    //Update member variables
+    angle = updateAngleRad();
+    nrOfLedsActive = updateNrOfLedsActive();
+
+    if(nrOfLedsActive == 0) {
+        if(!is_first_avg) {
+            avg_filter.reset();
+            is_first_avg = true;
+        }
+    } else {
+        if(is_first_avg) {
+            is_first_avg = false;
+            avg_filter.reset(angle);
+        }
+        avg_angle = avg_filter.apply(angle);
+    }
 }
 
 //****************************************************************************//
@@ -322,76 +303,11 @@ void SensorBar::writeBytes(uint8_t firstRegisterAddress, uint8_t * writeArray, u
     i2c.write(deviceAddress, data, length+1);
 }
 
-void SensorBar::update()
+void SensorBar::updateAsThread()
 {
     while(true) {
         ThisThread::flags_wait_any(threadFlag);
-
-        //Assign values to each bit, -127 to 127, sum, and divide
-        int16_t accumulator = 0;
-        uint8_t bitsCounted = 0;
-        int16_t i;
-
-        //Get the information from the wire, stores in lastBarRawValue
-        if( barStrobe == 1 ) {
-            writeByte(REG_DATA_B, 0x02); //Turn on IR
-            thread_sleep_for(2); // wait_us(2000);
-            writeByte(REG_DATA_B, 0x00); //Turn on feedback
-        } else {
-            writeByte(REG_DATA_B, 0x00); //make sure both IR and indicators are on
-        }
-        //Operate the I2C machine
-        lastBarRawValue = readByte( REG_DATA_A );  //Peel the data off port A
-
-        if( invertBits == 1 ) { //Invert the bits if needed
-            lastBarRawValue ^= 0xFF;
-        }
-
-        if( barStrobe == 1 ) {
-            writeByte(REG_DATA_B, 0x03); //Turn off IR and feedback when done
-        }
-
-        //count bits
-        for ( i = 0; i < 8; i++ ) {
-            if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
-                bitsCounted++;
-            }
-        }
-
-        //Find the vector value of each positive bit and sum
-        for ( i = 7; i > 3; i-- ) { //iterate negative side bits
-            if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
-                accumulator += ((-32 * (i - 3)) + 1);
-            }
-        }
-        for ( i = 0; i < 4; i++ ) { //iterate positive side bits
-            if ( ((lastBarRawValue >> i) & 0x01) == 1 ) {
-                accumulator += ((32 * (4 - i)) - 1);
-            }
-        }
-
-        if ( bitsCounted > 0 ) {
-            lastBarPositionValue = accumulator / bitsCounted;
-        } else {
-            lastBarPositionValue = 0;
-        }
-
-        //Update member variables
-        angle = updateAngleRad();
-        nrOfLedsActive = updateNrOfLedsActive();
-
-        if(nrOfLedsActive == 0) {
-            if(!is_first_avg) {
-                avg_filter.reset();
-                is_first_avg = true;
-            }
-        } else {
-            if(is_first_avg) {
-                is_first_avg = false;
-                avg_filter.reset(angle);
-            }
-            avg_angle = avg_filter.apply(angle);
-        }
+        update();
     }
 }
 
@@ -420,96 +336,3 @@ void SensorBar::sendThreadFlag()
 {
     thread.flags_set(threadFlag);
 }
-
-//****************************************************************************//
-//
-//  Circular buffer
-//
-//****************************************************************************//
-/*
-//Construct a CircularBuffer type with arguments
-//  uint16_t inputSize: number of elements
-
-//mbed has CircularBuffer
-namespace name
-{
-
-CircularBuffer::CircularBuffer(uint16_t inputSize)
-{
-    cBufferData = new int16_t[inputSize];
-    cBufferLastPtr = 0;
-    cBufferElementsUsed = 0;
-    cBufferSize = inputSize;
-}
-
-CircularBuffer::~CircularBuffer()
-{
-    delete[] cBufferData;
-}
-
-//Get an element at some depth into the circular buffer
-//zero is the push location.  Max is cBufferSize - 1
-//
-//Arguments:
-//  uint16_t elementNum: number of element in
-//
-int16_t CircularBuffer::getElement( uint16_t elementNum )
-{
-    //Translate elementNum into terms of cBufferLastPtr.
-    int16_t virtualElementNum;
-    virtualElementNum = cBufferLastPtr - elementNum;
-    if( virtualElementNum < 0 ) {
-        virtualElementNum += cBufferSize;
-    }
-
-    //Output the value
-    return cBufferData[virtualElementNum];
-}
-
-//Put a new element into the buffer.
-//This also expands the size up to the max size
-//Arguments:
-//
-//  int16_t elementVal: value of new element
-//
-void CircularBuffer::pushElement( int16_t elementVal )
-{
-    //inc. the pointer
-    cBufferLastPtr++;
-
-    //deal with roll
-    if( cBufferLastPtr >= cBufferSize ) {
-        cBufferLastPtr = 0;
-    }
-
-    //write data
-    cBufferData[cBufferLastPtr] = elementVal;
-
-    //increase length up to cBufferSize
-    if( cBufferElementsUsed < cBufferSize ) {
-        cBufferElementsUsed++;
-    }
-}
-
-//Averages the last n numbers and provides that.  Discards fractions
-int16_t CircularBuffer::averageLast( uint16_t numElements )
-{
-    //Add up all the elements
-    int32_t accumulator = 0;
-    int8_t i;
-    for( i = 0; i < numElements; i++ ) {
-        accumulator += getElement( i );
-    }
-    //Divide by number of elements
-    accumulator /= numElements;
-    return accumulator;
-}
-
-//Returns the current size of the buffer
-uint16_t CircularBuffer::recordLength()
-{
-    return cBufferElementsUsed;
-}
-
-}
-*/
