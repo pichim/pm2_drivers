@@ -109,7 +109,7 @@ void DCMotor::setRotation(float rotation)
 void DCMotor::setRotationRelative(float rotation_relative)
 {
     m_cntrlMode = CntrlMode::Rotation;
-    m_rotation_target += rotation_relative;
+    m_rotation_target = getRotation() + rotation_relative;
 }
 
 float DCMotor::getRotationTarget() const

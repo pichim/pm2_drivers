@@ -100,7 +100,7 @@ public:
     void setRotation(float rotation);
 
     /**
-     * @brief Set the relative target rotation of the motor.
+     * @brief Set the relative target rotation of the motor. Keep in mind that you do this only once.
      *
      * @param rotation_relative The relative target rotation in degrees.
      */
