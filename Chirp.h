@@ -1,15 +1,19 @@
 #ifndef CHIRP_H_
 #define CHIRP_H_
 
+#include <math.h>
 #include <stdint.h>
+
+#define M_PIf 3.14159265358979323846f /* pi */
 
 class Chirp
 {
 public:
-    Chirp(){};
-    Chirp(float f0, float f1, float t1, float Ts);
+    Chirp() {};
+    Chirp(const float f0, const float f1, const float t1, const float Ts);
+    virtual ~Chirp() = default;
 
-    void init(float f0, float f1, float t1, float Ts);
+    void init(const float f0, const float f1, const float t1, const float Ts);
     void reset();
     bool update();
 
@@ -18,7 +22,7 @@ public:
     float getExc() const;
 
 private:
-    struct chrip {
+    struct ChripParams {
         float f0, Ts, beta, k0, k1;
         uint32_t count, N;
         float exc, fchirp, sinarg;

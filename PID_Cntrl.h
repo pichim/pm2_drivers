@@ -1,6 +1,10 @@
 #ifndef PID_CNTRL_H_
 #define PID_CNTRL_H_
 
+#include <math.h>
+
+#define M_PI 3.141592653589793238462643383279502884
+
 class PID_Cntrl
 {
 public:

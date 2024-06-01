@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include "IIR_Filter.h"
 
 /*
@@ -255,14 +253,14 @@ void IIR_Filter::setup(float *b, float *a, int nb, int na)
     yk = (float *)malloc(na * sizeof(float));
     B[0] = b[0];
     float sum_B = b[0];
-    for (unsigned k = 0; k < nb; k++)
+    for (int k = 0; k < nb; k++)
     {
         B[k + 1] = b[k + 1];
         uk[k] = 0.0f;
         sum_B += b[k + 1];
     }
     float sum_A = 1.0f;
-    for (unsigned k = 0; k < na; k++)
+    for (int k = 0; k < na; k++)
     {
         A[k] = a[k + 1];
         yk[k] = 0.0f;

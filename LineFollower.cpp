@@ -62,7 +62,7 @@ float LineFollower::getAngleRadians() const
 
 float LineFollower::getAngleDegrees() const
 {
-    return m_angle * 180.0f / M_PI;
+    return m_angle * 180.0f / M_PIf;
 }
 
 float LineFollower::getRotationalVelocity() const
@@ -107,7 +107,7 @@ void LineFollower::followLine()
 
         // control algorithm in robot velocities
         m_robot_coord(1) = ang_cntrl_fcn(m_Kp, m_Kp_nl, m_angle);
-        m_robot_coord(0) = vel_cntrl_fcn(m_wheel_vel_max_rps * 2 * M_PI,
+        m_robot_coord(0) = vel_cntrl_fcn(m_wheel_vel_max_rps * 2 * M_PIf,
                                          m_rotation_to_wheel_vel,
                                          m_robot_coord(1),
                                          m_Cwheel2robot);
@@ -116,8 +116,8 @@ void LineFollower::followLine()
         Eigen::Vector2f wheel_speed = m_Cwheel2robot.inverse() * m_robot_coord;
 
         // setpoints for the dc-motors in rps
-        m_wheel_right_velocity_rps = wheel_speed(0) / (2.0f * M_PI);
-        m_wheel_left_velocity_rps = wheel_speed(1) / (2.0f * M_PI);
+        m_wheel_right_velocity_rps = wheel_speed(0) / (2.0f * M_PIf);
+        m_wheel_left_velocity_rps = wheel_speed(1) / (2.0f * M_PIf);
     }
 }
 

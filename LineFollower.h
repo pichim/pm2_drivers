@@ -1,11 +1,14 @@
 #ifndef LINE_FOLLOWER_H_
 #define LINE_FOLLOWER_H_
 
-#include <mbed.h>
+#include "mbed.h"
+
 #include <math.h>
 
 #include "pm2_drivers/SensorBar.h"
 #include "eigen/Dense.h"
+
+#define M_PIf 3.14159265358979323846f /* pi */
 
 class LineFollower
 {

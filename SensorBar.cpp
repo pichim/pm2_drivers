@@ -222,7 +222,7 @@ uint8_t SensorBar::readByte(uint8_t registerAddress)
     char readValue;
     char data[2] = {registerAddress, 0};
     i2c.write(deviceAddress, data, 1);
-    uint8_t val = i2c.read(deviceAddress, &readValue, 1);
+    i2c.read(deviceAddress, &readValue, 1);
 
     return readValue;
 }
@@ -239,8 +239,8 @@ unsigned int SensorBar::readWord(uint8_t registerAddress)
     //unsigned int timeout = RECEIVE_TIMEOUT_VALUE * 2;
     char data[2] = {registerAddress, 0};
     char r_data[2];
-    uint8_t val = i2c.write(deviceAddress, data, 1);
-    val = i2c.read(deviceAddress, r_data, 2);
+    i2c.write(deviceAddress, data, 1);
+    i2c.read(deviceAddress, r_data, 2);
     msb = ((unsigned int)r_data[0] & 0x00FF) << 8;
     lsb = ((unsigned int)r_data[1] & 0x00FF);
     readValue = msb | lsb;
@@ -258,7 +258,7 @@ void SensorBar::readBytes(uint8_t firstRegisterAddress, char * destination, uint
 {
     char data[2] = {firstRegisterAddress, 0};
     i2c.write(deviceAddress, data, 1);
-    uint8_t val = i2c.read(deviceAddress, destination, length);
+    i2c.read(deviceAddress, destination, length);
 }
 
 // writeByte(uint8_t registerAddress, uint8_t writeValue)

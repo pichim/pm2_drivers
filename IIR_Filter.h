@@ -1,6 +1,8 @@
 #ifndef IIR_Filter_H_
 #define IIR_Filter_H_
 
+#include <math.h>
+
 class IIR_Filter
 {
 public:

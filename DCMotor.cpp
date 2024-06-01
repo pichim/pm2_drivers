@@ -1,6 +1,3 @@
-#include <math.h>
-#define M_PI 3.14159265358979323846264338327950288
-
 #include "DCMotor.h"
 
 DCMotor::DCMotor(PinName pin_pwm,
@@ -30,7 +27,7 @@ DCMotor::DCMotor(PinName pin_pwm,
     setRotationCntrlGain();
 
     // iir filter
-    m_IIR_Filter_velocity.setup(2.0f * M_PI * 15.0f,
+    m_IIR_Filter_velocity.setup(2.0f * M_PIf * 15.0f,
                                 1.0f,
                                 TS,
                                 1.0f);
@@ -154,8 +151,8 @@ float DCMotor::getPWM() const
 
 void DCMotor::setVelocityCntrl(float kp, float ki, float kd)
 {
-    const float tau_f = 1.0f / (2.0f * M_PI * 30.0f);
-    const float tau_ro = 1.0f / (2.0f * M_PI * 0.5f / (2.0f * TS));
+    const float tau_f = 1.0f / (2.0f * M_PIf * 30.0f);
+    const float tau_ro = 1.0f / (2.0f * M_PIf * 0.5f / (2.0f * TS));
     m_PID_Cntrl_velocity.setup(kp,
                                ki,
                                kd,

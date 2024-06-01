@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "LinearCharacteristics3.h"
 
 LinearCharacteristics3::LinearCharacteristics3()

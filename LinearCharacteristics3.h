@@ -3,6 +3,8 @@
 
 #include "eigen/Dense.h"
 
+#include <stdint.h>
+
 class LinearCharacteristics3
 {
 public:

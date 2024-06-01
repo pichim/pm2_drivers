@@ -359,7 +359,6 @@ void LSM9DS1::initAccel()
 // is good practice.
 void LSM9DS1::calibrate(bool autoCalc)
 {  
-    uint8_t data[6] = {0, 0, 0, 0, 0, 0};
     uint8_t samples = 0;
     int ii;
     int32_t aBiasRawTemp[3] = {0, 0, 0};
@@ -1047,10 +1046,11 @@ uint8_t LSM9DS1::xgReadByte(uint8_t subAddress)
     // Whether we're using I2C or SPI, read a byte using the
     // gyro-specific I2C address or SPI CS pin.
 	
-    if (settings.device.commInterface == IMU_MODE_I2C)
+    if (settings.device.commInterface == IMU_MODE_I2C) {
         return I2CreadByte(_xgAddress, subAddress);
-    else if (settings.device.commInterface == IMU_MODE_SPI)
+    } else if (settings.device.commInterface == IMU_MODE_SPI) {
         return SPIreadByte(_xgAddress, subAddress);
+    }
 	return 0;
 }
 
@@ -1069,10 +1069,11 @@ uint8_t LSM9DS1::mReadByte(uint8_t subAddress)
 {
     // Whether we're using I2C or SPI, read a byte using the
     // accelerometer-specific I2C address or SPI CS pin.
-    if (settings.device.commInterface == IMU_MODE_I2C)
+    if (settings.device.commInterface == IMU_MODE_I2C) {
         return I2CreadByte(_mAddress, subAddress);
-    else if (settings.device.commInterface == IMU_MODE_SPI)
+    } else if (settings.device.commInterface == IMU_MODE_SPI) {
         return SPIreadByte(_mAddress, subAddress);
+    }
 	return 0;
 }
 
@@ -1121,7 +1122,7 @@ void LSM9DS1::SPIwriteByte(uint8_t csPin, uint8_t subAddress, uint8_t data)
 
 uint8_t LSM9DS1::SPIreadByte(uint8_t csPin, uint8_t subAddress)
 {
-    uint8_t temp;
+    uint8_t temp{0};
     // Use the multiple read function to read 1 byte. 
     // Value is returned to `temp`.
     SPIreadBytes(csPin, subAddress, &temp, 1);
@@ -1198,7 +1199,7 @@ uint8_t LSM9DS1::I2CreadByte(uint8_t address, uint8_t subAddress)
     temp[1] = 0x00;
     i2c.write(address, temp, 1);
     //i2c.write( address | 0x01);
-    int a = i2c.read(address, &data, 1);
+    i2c.read(address, &data, 1);
     return data;
 }
 
